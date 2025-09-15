@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="white">
+  <!-- Speaker -->
+  <path d="M7 9v6h4l5 5V4l-5 5H7z"></path>
+  <!-- Bar kecil -->
+  <path d="M16 8.82v6.36c1.18-.69 2-1.97 2-3.18s-.82-2.49-2-3.18z"></path>
+  <!-- Bar besar -->
+  <path d="M19 6v12c2.33-1.5 3.5-3.83 3.5-6s-1.17-4.5-3.5-6z"></path>
+</svg>
