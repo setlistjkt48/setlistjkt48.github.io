@@ -135,44 +135,45 @@ function onReady() {
   };
 
   settingsBtn.onclick = () => {
-  settingsMenu.innerHTML = "";
-  const currentQuality = player.getPlaybackQuality();
+    settingsMenu.innerHTML = "";
+    const currentQuality = player.getPlaybackQuality();
 
-  // ✅ Tetap buat tombol Auto (kapital)
-  const autoBtn = document.createElement("button");
-  autoBtn.textContent = "Auto";
-  if (currentQuality === "default") autoBtn.classList.add("active");
-  autoBtn.onclick = () => {
-    player.setPlaybackQuality("default");
-    updateQualityMenu();
-    settingsMenu.classList.remove("active");
-  };
-  settingsMenu.appendChild(autoBtn);
-
-  // ✅ Ambil quality dari API, tapi hilangkan 'auto' kecil
-  const available = player.getAvailableQualityLevels()
-    .filter(level => level !== "auto");
-
-  available.forEach((level) => {
-    const btn = document.createElement("button");
-    const label =
-      Object.keys(QUALITY_MAP).find((k) => QUALITY_MAP[k] === level) || level;
-    btn.textContent = label;
-
-    if (currentQuality === level) {
-      btn.classList.add("active");
-    }
-
-    btn.onclick = () => {
-      player.setPlaybackQuality(level);
+    // ✅ Tetap buat tombol Auto (kapital)
+    const autoBtn = document.createElement("button");
+    autoBtn.textContent = "Auto";
+    if (currentQuality === "default") autoBtn.classList.add("active");
+    autoBtn.onclick = () => {
+      player.setPlaybackQuality("default");
       updateQualityMenu();
       settingsMenu.classList.remove("active");
     };
-    settingsMenu.appendChild(btn);
-  });
+    settingsMenu.appendChild(autoBtn);
 
-  settingsMenu.classList.toggle("active");
-};
+    // ✅ Ambil quality dari API, tapi hilangkan 'auto' kecil
+    const available = player
+      .getAvailableQualityLevels()
+      .filter((level) => level !== "auto");
+
+    available.forEach((level) => {
+      const btn = document.createElement("button");
+      const label =
+        Object.keys(QUALITY_MAP).find((k) => QUALITY_MAP[k] === level) || level;
+      btn.textContent = label;
+
+      if (currentQuality === level) {
+        btn.classList.add("active");
+      }
+
+      btn.onclick = () => {
+        player.setPlaybackQuality(level);
+        updateQualityMenu();
+        settingsMenu.classList.remove("active");
+      };
+      settingsMenu.appendChild(btn);
+    });
+
+    settingsMenu.classList.toggle("active");
+  };
 
   function updateQualityMenu() {
     const buttons = settingsMenu.querySelectorAll("button");
@@ -320,21 +321,28 @@ let overlayTimer;
 
 if (isMobile()) {
   playerContainer.addEventListener("touchend", () => {
-    overlayControls.classList.add("show");
-    clearTimeout(overlayTimer);
-    overlayTimer = setTimeout(() => {
-      overlayControls.classList.remove("show");
-    }, 2000);
+    if (overlayControls.classList.contains("show")) {
+      overlayControls.classList.remove("show"); // langsung hide
+      clearTimeout(overlayTimer);
+    } else {
+      overlayControls.classList.add("show"); // tampil
+      clearTimeout(overlayTimer);
+      overlayTimer = setTimeout(() => {
+        overlayControls.classList.remove("show");
+      }, 2000);
+    }
   });
 
   overlayPlay.onclick = (e) => {
     e.stopPropagation();
     if (player.getPlayerState() === YT.PlayerState.PLAYING) {
       player.pauseVideo();
-      overlayPlay.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+      overlayPlay.innerHTML =
+        '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
     } else {
       player.playVideo();
-      overlayPlay.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+      overlayPlay.innerHTML =
+        '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
     }
   };
 
@@ -372,3 +380,62 @@ if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     lastTap = currentTime;
   });
 }
+
+let isDragging = false;
+
+function updateSeekPosition(e) {
+  const rect = progressWrap.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  let pct = (clientX - rect.left) / rect.width;
+  pct = Math.min(Math.max(pct, 0), 1);
+
+  // update UI saat drag
+  played.style.width = pct * 100 + "%";
+  thumb.style.left = pct * 100 + "%";
+  timeEl.textContent =
+    formatTime(pct * player.getDuration()) +
+    " / " +
+    formatTime(player.getDuration());
+
+  return pct;
+}
+
+// Mouse events
+progressWrap.addEventListener("mousedown", (e) => {
+  isDragging = true;
+  cancelAnimationFrame(raf); // stop auto update
+  updateSeekPosition(e);
+});
+
+document.addEventListener("mousemove", (e) => {
+  if (isDragging) updateSeekPosition(e);
+});
+
+document.addEventListener("mouseup", (e) => {
+  if (isDragging) {
+    const pct = updateSeekPosition(e);
+    player.seekTo(player.getDuration() * pct, true);
+    isDragging = false;
+    update(); // resume auto update
+  }
+});
+
+// Touch events
+progressWrap.addEventListener("touchstart", (e) => {
+  isDragging = true;
+  cancelAnimationFrame(raf);
+  updateSeekPosition(e);
+});
+
+document.addEventListener("touchmove", (e) => {
+  if (isDragging) updateSeekPosition(e);
+});
+
+document.addEventListener("touchend", (e) => {
+  if (isDragging) {
+    const pct = updateSeekPosition(e);
+    player.seekTo(player.getDuration() * pct, true);
+    isDragging = false;
+    update(); // resume auto update
+  }
+});
