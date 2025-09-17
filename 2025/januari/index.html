@@ -5,234 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Setlist JKT48</title>
   <link rel="icon" type="image/x-icon" href="../../assets/img/favicon.ico">
-  <style>
-    /* --- Global Style --- */
-    :root {
-      --gradient: linear-gradient(135deg, #ec4899, #8b5cf6);
-      --bg-dark: #2b214d;
-      --card-bg: rgba(255,255,255,0.05);
-      --text: #ffe4f3;
-      --muted: #d1a3c4;
-      --btn-bg: #ec4899;
-      --btn-bg-hover: #db2777;
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      font-family: "Poppins", Sans-serif;
-      background: var(--bg-dark);
-      color: var(--text);
-      line-height: 1.5;
-    }
-
-    /* --- Header Section --- */
-    body {
-      margin: 0;
-      padding: 1rem;
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: left;
-      padding: 20px;
-    }
-
-    .logo {
-      width: 90px;
-      height: 90px;
-      margin-right: 20px;
-      border-radius: 12px;
-    }
-
-    .header-text {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .header-text h1 {
-      margin: 0;
-      font-size: 30px;
-      line-height: 1.2;
-    }
-
-    .header-text h2 {
-      margin: 0;
-      font-size: 26px;
-      line-height: 1.2;
-      font-weight: normal;
-    }
-
-    .header-text p {
-      margin: 5px 0 0;
-      font-size: 14px;
-      letter-spacing: 0.5px;
-    }
-
-    /* --- Social Media --- */
-    .button-group {
-      display: flex;
-      justify-content: center;
-      gap: 20px; /* jarak antar tombol */
-      padding: 10px;
-    }
-
-    .button-group a {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 90px;
-      height: 40px;
-      font-size: 14px;
-      text-decoration: none;
-      background-color: var(--btn-bg-hover);
-      color: #ffdfff;
-      font-weight: bold;
-      border-radius: 8px;
-      transition: background 0.3s;
-    }
-
-    .button-group a:hover {
-      background-color: deeppink;
-    }
-
-    /* --- Container --- */
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 2rem 1rem 1rem;
-    }
-
-    /* --- Month Cards --- */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-    }
-    .card {
-      background: var(--card-bg);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
-      transition: transform .2s, box-shadow .2s;
-      font-size: 1rem; /* baseline untuk isi card */
-    }
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-    }
-    .card h2 {
-      font-size: 1.5em;
-      margin-bottom: .1rem;
-      color: var(--text);
-    }
-    .card ul {
-      list-style: none;
-      max-height: none;
-      overflow: visible;
-    }
-    .card li {
-     display: flex;
-      justify-content: space-between;
-      align-items: flex-start;   /* biar bisa wrap */
-     padding: .4rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      font-size: 1em;
-    }
-
-    .card li .video-title {
-      flex: 1;                  /* isi ruang kosong */
-      margin-right: 1rem;        /* kasih jarak ke tombol */
-      word-break: break-word;    /* pecah kata kalau kepanjangan */
-      white-space: normal;       /* biar bisa turun ke baris bawah */
-    }
-    .card li:last-child {
-      border-bottom: none;
-    }
-
-    .video-title {
-      display: flex;
-      align-items: center;   /* gambar sejajar tengah 2 baris teks */
-      gap: 0.6rem;
-      flex: 1;
-    }
-
-    .video-title img {
-      height: 2.8em; /* kira-kira 2x tinggi font */
-      width: auto;
-      border-radius: 4px; /* biar lebih rapi */
-      flex-shrink: 0;
-    }
-
-    .video-text {
-      display: flex;
-      flex-direction: column; /* pisahkan 2 baris */
-      line-height: 1.6;
-    }
-    .video-text .title {
-      font-weight: bold;
-    }
-    .video-text .date {
-      font-size: 0.85em;
-      color: #ccc;
-    }
-
-    /* --- Button Watch & Line Up --- */
-    .btn {
-      background: var(--btn-bg);
-      border: none;
-      color: white;
-      padding: .35rem .8rem;
-      border-radius: .4rem;
-      cursor: pointer;
-      font-size: 0.95em;
-      text-decoration: none;
-      transition: background .2s;
-    }
-    .btn:hover {
-      background: var(--btn-bg-hover);
-    }
-
-    .desc {
-      margin: .5rem 0 1rem 0;
-      padding: .6rem .8rem;
-      background: rgba(255,255,255,0.08);
-      border-left: 3px solid var(--btn-bg);
-      border-radius: .3rem;
-      font-size: .9em;
-    }
-    .hidden {
-      display: none;
-    }
-
-    /* Tablet (adjust angka sesuai kebutuhan) */
-    @media (max-width: 1024px) {
-    .card {
-      font-size: 0.94rem; /* ~94% dari baseline */
-      }
-    }
-
-    /* Mobile phones */
-    @media (max-width: 600px) {
-    .card {
-      font-size: 0.88rem; /* ~88% dari baseline, ubah sesuai selera */
-      }
-    }
-
-    /* --- Footer --- */
-    footer {
-      text-align: center;
-      padding: 2.5rem 1rem;
-      font-size: 0.9rem;
-      font-weight: bold;
-      margin-top: 1rem;
-    }
-  </style>
+  <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
   <!-- Hero -->
@@ -260,7 +33,7 @@
         <h2>Januari 2025</h2>
         <ul>
           <li>
-            <span class="video-title"><img src="../../assets/img/aturananticinta.png" alt="icon video">
+            <span class="video-title"><img src="../../assets/img/aturananticinta.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Aturan Anti Cinta</span>
                  <span class="date">09 Januari 2025</span>
@@ -273,7 +46,7 @@
           </li>
               <div class="desc hidden">Amanda, Anindya, Cathy, Elin, Olla, Ella, Gendis, Gracie, Greesel, Eli, Indah, Indira, Lyn, Michie, Raisha, Regie.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/pajamadrive.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/pajamadrive.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Pajama Drive</span>
                  <span class="date">10 Januari 2025</span>
@@ -286,7 +59,7 @@
           </li>
               <div class="desc hidden">Aralie, Lana, Fritzy, Lily, Trisha, Levi, Nayla, Oline, Regie, Ribka, Nala, Kimmy.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/aturananticinta.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/aturananticinta.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Aturan Anti Cinta</span>
                  <span class="date">11 Januari 2025 (STS Greesel)</span>
@@ -299,7 +72,7 @@
           </li>
               <div class="desc hidden">Amanda, Anindya, Cathy, Chelsea, Cynthia, Daisy, Olla, Ella, Gendis, Gracie, Greesel, Eli, Indah, Lyn, Michie, Raisha.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/inginbertemu.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/inginbertemu.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Ingin Bertemu</span>
                  <span class="date">12 Januari 2025</span>
@@ -312,7 +85,7 @@
           </li>
               <div class="desc hidden">Aralie, Delynn, Erine, Fritzy, Lily, Moreen, Levi, Nayla, Nachia, Oline, Ribka, Kimmy.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/pajamadrive.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/pajamadrive.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Pajama Drive</span>
                  <span class="date">17 Januari 2025 (STS Ribka)</span>
@@ -325,7 +98,7 @@
           </li>
               <div class="desc hidden">Lana, Erine, Fritzy, Lily, Trisha, Levi, Nayla, Oline, Regie, Ribka, Nala, Kimmy.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/aturananticinta.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/aturananticinta.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Aturan Anti Cinta</span>
                  <span class="date">18 Januari 2025 (STS Feni)</span>
@@ -338,7 +111,7 @@
           </li>
               <div class="desc hidden">Amanda, Christy, Anindya, Cathy, Elin, Chelsea, Daisy, Feni, Fiony, Freya, Gita, Kathrina, Lulu, Michie, Raisha, Gracia.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/inginbertemu.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/inginbertemu.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Ingin Bertemu</span>
                  <span class="date">19 Januari 2025</span>
@@ -351,7 +124,7 @@
           </li>
               <div class="desc hidden">Lana, Erine, Fritzy, Lily, Moreen, Levi, Nayla, Nachia, Oline, Regie, Ribka, Kimmy.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/carameminumramune.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/carameminumramune.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Cara Meminum Ramune</span>
                  <span class="date">19 Januari 2025 (STS Marsha)</span>
@@ -364,7 +137,7 @@
           </li>
               <div class="desc hidden">Christy, Lia, Cynthia, Danella, Freya, Gita, Greesel, Indah, Indira, Jessi, Lyn, Kathrina, Lulu, Marsha, Muthe, Kimmy.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/aturananticinta.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/aturananticinta.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Aturan Anti Cinta</span>
                  <span class="date">23 Januari 2025</span>
@@ -377,7 +150,7 @@
           </li>
               <div class="desc hidden">Alya, Christy, Anindya, Cathy, Oniel, Danella, Daisy, Olla, Fiony, Gendis, Gracie, Greesel, Eli, Indira, Lulu, Michie.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/carameminumramune.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/carameminumramune.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Cara Meminum Ramune</span>
                  <span class="date">24 Januari 2025</span>
@@ -390,7 +163,7 @@
           </li>
               <div class="desc hidden">Christy, Lia, Cathy, Chelsea, Danella, Daisy, Ella, Gita, Gracie, Greesel, Indira, Lyn, Lulu, Marsha, Muthe, Gracia.</div>
             
-          <li><span class="video-title"><img src="../../assets/img/pajamadrive.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/pajamadrive.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Pajama Drive</span>
                  <span class="date">25 Januari 2025</span>
@@ -403,7 +176,7 @@
           </li>
               <div class="desc hidden">Delynn, Lana, Erine, Fritzy, Lily, Trisha, Nayla, Nachia, Oline, Regie, Nala, Kimmy.</div>
 
-          <li><span class="video-title"><img src="../../assets/img/inginbertemu.png" alt="icon video">
+          <li><span class="video-title"><img src="../../assets/img/inginbertemu.jpg" alt="icon video">
                 <span class="video-text">
                  <span class="title">Ingin Bertemu</span>
                  <span class="date">26 Januari 2025 (Shonichi Gen 13)</span>
@@ -429,16 +202,6 @@
     <p>© 2025 SetlistJKT48. Dibuat dengan 💖 dan penuh semangat.</p>
   </footer>
 
-  <script>
-     // Toggle deskripsi
-      document.querySelectorAll('.desc-btn').forEach((btn, i) => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation(); // supaya gak buka/tutup card
-          const descBox = btn.closest('li').nextElementSibling;
-          descBox.classList.toggle('hidden');
-        });
-      });
-      
-  </script>
+  <script src="../../script.js"></script>
 </body>
 </html>
