@@ -31,6 +31,8 @@ const tag = document.createElement("script");
 tag.src = "https://www.youtube.com/iframe_api";
 document.body.appendChild(tag);
 
+let firstPlay = true;
+
 function onYouTubeIframeAPIReady() {
   player = new YT.Player("video", {
     videoId: videoId,
@@ -38,6 +40,7 @@ function onYouTubeIframeAPIReady() {
     events: { onReady: onReady, onStateChange: onStateChange },
   });
 }
+
 function onReady() {
   function togglePlay() {
     if (player.getPlayerState() === YT.PlayerState.PLAYING) {
@@ -51,15 +54,18 @@ function onReady() {
     }
   }
   playBtn.onclick = togglePlay;
+
   if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-  container.onclick = (e) => {
-    if (!e.target.closest(".controls")) togglePlay();
-  };
-}
+    container.onclick = (e) => {
+      if (!e.target.closest(".controls")) togglePlay();
+    };
+  }
+
   container.ondblclick = () => {
     if (!document.fullscreenElement) container.requestFullscreen();
     else document.exitFullscreen();
   };
+
   document.addEventListener("keydown", (e) => {
     if (e.code === "Space") {
       e.preventDefault();
@@ -129,45 +135,58 @@ function onReady() {
   };
 
   settingsBtn.onclick = () => {
-    settingsMenu.innerHTML = "";
+  settingsMenu.innerHTML = "";
+  const currentQuality = player.getPlaybackQuality();
 
-    const available = player.getAvailableQualityLevels();
-    const currentQuality = player.getPlaybackQuality();
+  // ✅ Tetap buat tombol Auto (kapital)
+  const autoBtn = document.createElement("button");
+  autoBtn.textContent = "Auto";
+  if (currentQuality === "default") autoBtn.classList.add("active");
+  autoBtn.onclick = () => {
+    player.setPlaybackQuality("default");
+    updateQualityMenu();
+    settingsMenu.classList.remove("active");
+  };
+  settingsMenu.appendChild(autoBtn);
 
-    // Tombol Auto
-    const autoBtn = document.createElement("button");
-    autoBtn.textContent = "Auto";
-    if (currentQuality === "default") autoBtn.classList.add("active");
-    autoBtn.onclick = () => {
-      player.setPlaybackQuality("default");
+  // ✅ Ambil quality dari API, tapi hilangkan 'auto' kecil
+  const available = player.getAvailableQualityLevels()
+    .filter(level => level !== "auto");
+
+  available.forEach((level) => {
+    const btn = document.createElement("button");
+    const label =
+      Object.keys(QUALITY_MAP).find((k) => QUALITY_MAP[k] === level) || level;
+    btn.textContent = label;
+
+    if (currentQuality === level) {
+      btn.classList.add("active");
+    }
+
+    btn.onclick = () => {
+      player.setPlaybackQuality(level);
+      updateQualityMenu();
       settingsMenu.classList.remove("active");
     };
-    settingsMenu.appendChild(autoBtn);
+    settingsMenu.appendChild(btn);
+  });
 
-    // Loop kualitas yang tersedia
-    available.forEach((level) => {
-      const label = Object.keys(QUALITY_MAP).find(
-        (key) => QUALITY_MAP[key] === level
-      );
-      if (label) {
-        const btn = document.createElement("button");
-        btn.textContent = label;
+  settingsMenu.classList.toggle("active");
+};
 
-        // Tambahkan highlight aktif
-        if (currentQuality === level) {
-          btn.classList.add("active");
-        }
-
-        btn.onclick = () => {
-          player.setPlaybackQuality(QUALITY_MAP[label]);
-          settingsMenu.classList.remove("active");
-        };
-        settingsMenu.appendChild(btn);
+  function updateQualityMenu() {
+    const buttons = settingsMenu.querySelectorAll("button");
+    const current = player.getPlaybackQuality();
+    buttons.forEach((b) => {
+      b.classList.remove("active");
+      if (
+        b.textContent.toLowerCase() === current.toLowerCase() ||
+        (current === "default" && b.textContent === "Auto")
+      ) {
+        b.classList.add("active");
       }
     });
-
-    settingsMenu.classList.toggle("active");
-  };
+  }
 
   fullscreenBtn.onclick = () => {
     if (!document.fullscreenElement) container.requestFullscreen();
@@ -238,32 +257,27 @@ function showControls() {
 
   hideControlsTimer = setTimeout(() => {
     controls.classList.add("hide");
-  }, 2000); // 2 detik
+  }, 2000);
 }
 
-// Tampilkan controls saat ada interaksi
 container.addEventListener("mousemove", showControls);
 container.addEventListener("click", showControls);
 
-// Saat masuk/keluar fullscreen tetap reset logika
 document.addEventListener("fullscreenchange", () => {
   controls.classList.remove("hide");
   if (hideControlsTimer) clearTimeout(hideControlsTimer);
   showControls();
 });
 
-// Inisialisasi saat halaman load
 window.addEventListener("load", showControls);
 
 const playerContainer = document.getElementById("player-container");
 
-// 🔹 Kalau double-click di controls, hentikan event biar tidak tembus
 controls.addEventListener("dblclick", function (e) {
   e.preventDefault();
-  e.stopImmediatePropagation(); // lebih kuat daripada stopPropagation
+  e.stopImmediatePropagation();
 });
 
-// 🔹 Double-click di video area → fullscreen toggle
 playerContainer.addEventListener("dblclick", function (e) {
   if (!document.fullscreenElement) {
     playerContainer.requestFullscreen();
@@ -272,12 +286,10 @@ playerContainer.addEventListener("dblclick", function (e) {
   }
 });
 
-// Helper: cek apakah device HP
 function isMobile() {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-// Saat masuk fullscreen, auto rotate di HP
 document.addEventListener("fullscreenchange", async () => {
   if (document.fullscreenElement) {
     if (isMobile() && screen.orientation && screen.orientation.lock) {
@@ -288,7 +300,6 @@ document.addEventListener("fullscreenchange", async () => {
       }
     }
   } else {
-    // Balik ke portrait saat keluar fullscreen
     if (isMobile() && screen.orientation && screen.orientation.lock) {
       try {
         await screen.orientation.lock("portrait");
@@ -299,54 +310,65 @@ document.addEventListener("fullscreenchange", async () => {
   }
 });
 
+// === Overlay Controls khusus HP ===
+const overlayControls = document.getElementById("overlay-controls");
+const overlayPlay = document.getElementById("overlay-play");
+const overlayRewind = document.getElementById("overlay-rewind");
+const overlayForward = document.getElementById("overlay-forward");
+
+let overlayTimer;
+
+if (isMobile()) {
+  playerContainer.addEventListener("touchend", () => {
+    overlayControls.classList.add("show");
+    clearTimeout(overlayTimer);
+    overlayTimer = setTimeout(() => {
+      overlayControls.classList.remove("show");
+    }, 2000);
+  });
+
+  overlayPlay.onclick = (e) => {
+    e.stopPropagation();
+    if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+      player.pauseVideo();
+      overlayPlay.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+    } else {
+      player.playVideo();
+      overlayPlay.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    }
+  };
+
+  overlayRewind.onclick = (e) => {
+    e.stopPropagation();
+    player.seekTo(player.getCurrentTime() - 10, true);
+  };
+
+  overlayForward.onclick = (e) => {
+    e.stopPropagation();
+    player.seekTo(player.getCurrentTime() + 10, true);
+  };
+}
+
 // === Double Tap Gesture khusus HP ===
 if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-  const overlayRew = document.getElementById("overlay-rewind");
-  const overlayPlay = document.getElementById("overlay-play");
-  const overlayFwd = document.getElementById("overlay-forward");
-
   let lastTap = 0;
 
   playerContainer.addEventListener("touchstart", function (e) {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTap;
 
-    if (tapLength < 300 && tapLength > 0) { // double tap
+    if (tapLength < 300 && tapLength > 0) {
       const touchX = e.touches[0].clientX;
       const screenW = window.innerWidth;
 
       if (touchX < screenW / 3) {
-        // ⏪ Double tap kiri
         player.seekTo(player.getCurrentTime() - 10, true);
-        showOverlayIcon(overlayRew);
       } else if (touchX > (2 * screenW) / 3) {
-        // ⏩ Double tap kanan
         player.seekTo(player.getCurrentTime() + 10, true);
-        showOverlayIcon(overlayFwd);
       }
       e.preventDefault();
-    } else {
-      // Single tap tengah → toggle play/pause
-      const touchX = e.touches[0].clientX;
-      if (touchX >= screenW / 3 && touchX <= (2 * screenW) / 3) {
-        if (player.getPlayerState() === YT.PlayerState.PLAYING) {
-          player.pauseVideo();
-          overlayPlay.textContent = "▶️";
-        } else {
-          player.playVideo();
-          overlayPlay.textContent = "⏯";
-        }
-        showOverlayIcon(overlayPlay);
-      }
     }
 
     lastTap = currentTime;
   });
 }
-
-function showOverlayIcon(el) {
-  el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 800);
-}
-
-

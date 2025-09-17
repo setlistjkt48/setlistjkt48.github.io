@@ -35,11 +35,18 @@
     <!-- Video Player -->
     <div class="player-container" id="player-container">
     <div id="video"></div>
-    <div class="yt-overlay" id="yt-overlay">
-      <div class="icon left" id="overlay-rewind">⏪</div>
-      <div class="icon center" id="overlay-play">⏯</div>
-     <div class="icon right" id="overlay-forward">⏩</div>
-    </div>
+<!-- Overlay Controls khusus HP -->
+<div class="overlay-controls" id="overlay-controls">
+  <button id="overlay-rewind" class="overlay-btn" aria-label="Rewind 10s">
+    <svg viewBox="0 0 24 24"><path d="M12 12L21 5v14l-9-7zm-1 7V5L2 12l9 7z"/></svg>
+  </button>
+  <button id="overlay-play" class="overlay-btn" aria-label="Play/Pause">
+    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+  </button>
+  <button id="overlay-forward" class="overlay-btn" aria-label="Forward 10s">
+    <svg viewBox="0 0 24 24"><path d="M12 12L3 5v14l9-7zm1-7v14l9-7-9-7z"/></svg>
+  </button>
+</div>
     <div class="controls" id="controls">
       <div class="progress-wrap" id="progress-wrap">
         <div class="progress-bg"></div>
