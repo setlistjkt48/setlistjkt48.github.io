@@ -1,0 +1,83 @@
+/* --- Gallery / Photo Frames --- */
+.container {
+  max-width: 720px;
+  width: 90%;
+  margin: 2rem auto;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 mendatar secara horizontal */
+  gap: 2rem;
+  align-items: start;
+}
+
+.photo-card {
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Frame with 16:9 ratio, rounded corners and elegant overlay title */
+.photo-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9; /* modern way to keep 16:9 */
+  border-radius: 18px; /* border radius 8px */
+  overflow: hidden;
+  box-shadow: var(--frame-shadow);
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.photo-frame:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 18px 50px rgba(11, 7, 30, 0.7);
+}
+
+/* Elegant bottom band for title inside frame */
+.photo-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.45) 40%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* small subtitle below title (inside frame) */
+.photo-subtitle {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  opacity: 0.95;
+  margin-top: 0rem;
+}
+
+/* Responsive: 1 column on small screens */
+@media (max-width: 720px) {
+  .photo-grid {
+    grid-template-columns: 1fr;
+  }
+  .photo-title {
+    font-size: 1rem;
+  }
+  .photo-subtitle {
+    font-size: 0.65rem;
+  }
+}

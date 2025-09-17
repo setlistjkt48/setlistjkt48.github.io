@@ -5,12 +5,14 @@
       font-weight: normal;
       font-style: normal;
     }
+
     @font-face {
       font-family: 'font-medium';
       src: url('assets/fonts/font-medium.otf') format('truetype');
       font-weight: normal;
       font-style: normal;
     }
+
     @font-face {
       font-family: 'font-light';
       src: url('assets/fonts/font-light.otf') format('truetype');
@@ -22,17 +24,19 @@
     :root {
       --gradient: linear-gradient(135deg, #ec4899, #8b5cf6);
       --bg-dark: #2b214d;
-      --card-bg: rgba(255,255,255,0.05);
+      --card-bg: rgba(255, 255, 255, 0.05);
       --text: #ffe4f3;
       --muted: #d1a3c4;
       --btn-bg: #ec4899;
       --btn-bg-hover: #db2777;
     }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
+
     body {
       font-family: "Poppins", Sans-serif;
       background: var(--bg-dark);
@@ -90,8 +94,8 @@
     .button-group {
       display: flex;
       justify-content: center;
-      gap: 20px; /* jarak antar tombol */
-      padding: 10px;
+      gap: 15px;                      /* jarak antar tombol */
+      padding: 5px;
     }
 
     .button-group a {
@@ -113,244 +117,69 @@
       background-color: deeppink;
     }
 
-    /* --- Gallery / Photo Frames --- */
-    .container {
-      max-width: 720px;
-      width: 90%;
-      margin: 4rem auto;
-    }
-
-    .photo-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr); /* 2 mendatar secara horizontal */
-      gap: 2rem;
-      align-items: start;
-    }
-
-    .photo-card {
-      background: transparent;
-      cursor: pointer;
-    }
-
-    /* Frame with 16:9 ratio, rounded corners and elegant overlay title */
-    .photo-frame {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9; /* modern way to keep 16:9 */
-      border-radius: 18px; /* border radius 8px */
-      overflow: hidden;
-      box-shadow: var(--frame-shadow);
-      background-size: cover;
-      background-position: center;
-      transition: transform 0.35s ease, box-shadow 0.35s ease;
-    }
-
-    .photo-frame:hover {
-      transform: translateY(-6px) scale(1.01);
-      box-shadow: 0 18px 50px rgba(11,7,30,0.7);
-    }
-
-    /* Elegant bottom band for title inside frame */
-    .photo-title {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: 0.8rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(3px);
-      background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.7) 100%);
-      color: #fff;
-      font-size: 1.1rem;
-      font-weight: bold;
-      letter-spacing: 1.5px;
-      text-align: center;
-      box-sizing: border-box;
-    }
-
-    /* small subtitle below title (inside frame) */
-    .photo-subtitle {
-      display: block;
-      font-size: 0.7rem;
-      letter-spacing: 1px;
-      opacity: 0.95;
-      margin-top: 0rem;
-    }
-
-    /* Responsive: 1 column on small screens */
-    @media (max-width: 720px) {
-      .photo-grid {
-        grid-template-columns: 1fr;
-      }
-      .photo-title {
-        font-size: 1rem;
-      }
-      .photo-subtitle {
-        font-size: 0.65rem;
-      }
-    }
-
-    /* --- Container --- */
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 2rem 1rem 1rem;
-    }
-
-    /* --- Month Cards --- */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-    }
-    .card {
-      background: var(--card-bg);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
-      transition: transform .2s, box-shadow .2s;
-      font-size: 1rem; /* baseline untuk isi card */
-    }
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-    }
-    .card h2 {
-      font-size: 1.4em;
-      margin-bottom: .1rem;
-      color: var(--text);
-    }
-    .card ul {
-      list-style: none;
-      max-height: none;
-      overflow: visible;
-    }
-    .card li {
-     display: flex;
-      justify-content: space-between;
-      align-items: flex-start;   /* biar bisa wrap */
-     padding: .4rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      font-size: 0.98em;
-    }
-
-    .card li .video-title {
-      flex: 1;                  /* isi ruang kosong */
-      margin-right: 1rem;        /* kasih jarak ke tombol */
-      word-break: break-word;    /* pecah kata kalau kepanjangan */
-      white-space: normal;       /* biar bisa turun ke baris bawah */
-    }
-    .card li:last-child {
-      border-bottom: none;
-    }
-
-    .video-title {
-      display: flex;
-      align-items: center;   /* gambar sejajar tengah 2 baris teks */
-      gap: 0.6rem;
-      flex: 1;
-    }
-
-    .video-title img {
-      height: 2.8em; /* kira-kira 2x tinggi font */
-      width: auto;
-      border-radius: 4px; /* biar lebih rapi */
-      flex-shrink: 0;
-    }
-
-    .video-text {
-      display: flex;
-      flex-direction: column; /* pisahkan 2 baris */
-      line-height: 1.6;
-    }
-    .video-text .title {
-      font-weight: bold;
-    }
-    .video-text .date {
-      font-size: 0.85em;
-      color: #ccc;
-    }
-
-    /* --- Button Watch & Line Up --- */
-    .btn {
-      background: var(--btn-bg);
-      border: none;
-      color: white;
-      padding: .35rem .8rem;
-      border-radius: .4rem;
-      cursor: pointer;
-      font-size: 0.95em;
-      text-decoration: none;
-      transition: background .2s;
-    }
-    .btn:hover {
-      background: var(--btn-bg-hover);
-    }
-
-    .desc {
-      margin: .5rem 0 1rem 0;
-      padding: .6rem .8rem;
-      background: rgba(255,255,255,0.08);
-      border-left: 3px solid var(--btn-bg);
-      border-radius: .3rem;
-      font-size: .9em;
-    }
-    .hidden {
-      display: none;
-    }
-
-    /* --- Responsive untuk HP --- */
-    @media (max-width: 576px) {
-      .card {
-        padding: 1rem;
-        font-size: 0.9rem; /* sedikit kecil biar pas di layar HP */
-      }
-
-      .card h2 {
-        font-size: 1.2em;
-      }
-
-      .video-title img {
-        height: 3em; /* kecilkan thumbnail */
-        margin-top: 1rem; /* biar agak turun dikit */
-      }
-
-      .video-text {
-        margin-top: 0.8rem;
-      }
-
-      .card li {
-        flex-direction: column; /* baris 1: judul video, baris 2: tombol */
-        align-items: flex-start; /* biar judul tetap rata kiri */
-      }
-
-      .card li div {
-        width: 100%;                       /* tombol full baris */
-        display: flex;
-        justify-content: space-between;     /* tombol kiri-kanan */
-        margin-top: 0.6rem;                 /* jarak atas dari judul */
-      }
-
-      .btn {
-        flex: 1;
-        max-width: 48%;  /* biar seimbang kiri-kanan */
-        text-align: center;
-        font-size: 0.85em;
-        padding: .3rem .6rem;
-      }
-
-      .desc {
-        font-size: 0.85em;
-      }
-    }
-
-       /* --- Footer --- */
+    /* --- Footer --- */
     footer {
       text-align: center;
       letter-spacing: 0.5px;
       padding: 2.5rem 1rem;
       font-size: 0.9rem;
       margin-top: 1rem;
+      /* beri jarak atas */
+    }
+
+    @media (max-width: 576px) {
+      :root {
+        --header-scale: 0.85;
+        /* skala header di HP */
+        --social-scale: 0.85;
+        /* skala tombol sosial di HP */
+        --footer-scale: 0.85;
+        /* skala footer di HP */
+      }
+
+      /* Header */
+      .header {
+        align-items: center;
+        text-align: left;
+        gap: 1rem;
+      }
+
+      .logo {
+        width: calc(90px * var(--header-scale));
+        height: calc(90px * var(--header-scale));
+        margin: 0 0 0.5rem 0;
+      }
+
+      .header-text h1 {
+        font-size: calc(30px * var(--header-scale));
+      }
+
+      .header-text h2 {
+        font-size: calc(26px * var(--header-scale));
+      }
+
+      .header-text p {
+        font-size: calc(14px * var(--header-scale));
+      }
+
+      /* Social Media */
+      .button-group {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        padding: 0.5rem;
+        margin-top: -1rem;
+      }
+
+      .button-group a {
+        width: calc(90px * var(--social-scale));
+        height: calc(40px * var(--social-scale));
+        font-size: calc(14px * var(--social-scale));
+      }
+
+      /* Footer */
+      footer {
+        font-size: calc(0.9rem * var(--footer-scale));
+        padding: calc(2.5rem * var(--footer-scale)) 1rem;
+        line-height: 1.4;
+      }
     }
