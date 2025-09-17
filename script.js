@@ -51,9 +51,11 @@ function onReady() {
     }
   }
   playBtn.onclick = togglePlay;
+  if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
   container.onclick = (e) => {
     if (!e.target.closest(".controls")) togglePlay();
   };
+}
   container.ondblclick = () => {
     if (!document.fullscreenElement) container.requestFullscreen();
     else document.exitFullscreen();
@@ -116,24 +118,54 @@ function onReady() {
   };
 
   const QUALITY_MAP = {
-    Auto: "default",
-    "144p": "small",
+    "144p": "tiny",
+    "240p": "small",
     "360p": "medium",
     "480p": "large",
     "720p": "hd720",
     "1080p": "hd1080",
+    "1440p": "hd1440",
+    "2160p": "hd2160", // 4K
   };
+
   settingsBtn.onclick = () => {
     settingsMenu.innerHTML = "";
-    Object.keys(QUALITY_MAP).forEach((label) => {
-      const btn = document.createElement("button");
-      btn.textContent = label;
-      btn.onclick = () => {
-        player.setPlaybackQuality(QUALITY_MAP[label]);
-        settingsMenu.classList.remove("active");
-      };
-      settingsMenu.appendChild(btn);
+
+    const available = player.getAvailableQualityLevels();
+    const currentQuality = player.getPlaybackQuality();
+
+    // Tombol Auto
+    const autoBtn = document.createElement("button");
+    autoBtn.textContent = "Auto";
+    if (currentQuality === "default") autoBtn.classList.add("active");
+    autoBtn.onclick = () => {
+      player.setPlaybackQuality("default");
+      settingsMenu.classList.remove("active");
+    };
+    settingsMenu.appendChild(autoBtn);
+
+    // Loop kualitas yang tersedia
+    available.forEach((level) => {
+      const label = Object.keys(QUALITY_MAP).find(
+        (key) => QUALITY_MAP[key] === level
+      );
+      if (label) {
+        const btn = document.createElement("button");
+        btn.textContent = label;
+
+        // Tambahkan highlight aktif
+        if (currentQuality === level) {
+          btn.classList.add("active");
+        }
+
+        btn.onclick = () => {
+          player.setPlaybackQuality(QUALITY_MAP[label]);
+          settingsMenu.classList.remove("active");
+        };
+        settingsMenu.appendChild(btn);
+      }
     });
+
     settingsMenu.classList.toggle("active");
   };
 
@@ -266,3 +298,55 @@ document.addEventListener("fullscreenchange", async () => {
     }
   }
 });
+
+// === Double Tap Gesture khusus HP ===
+if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  const overlayRew = document.getElementById("overlay-rewind");
+  const overlayPlay = document.getElementById("overlay-play");
+  const overlayFwd = document.getElementById("overlay-forward");
+
+  let lastTap = 0;
+
+  playerContainer.addEventListener("touchstart", function (e) {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+
+    if (tapLength < 300 && tapLength > 0) { // double tap
+      const touchX = e.touches[0].clientX;
+      const screenW = window.innerWidth;
+
+      if (touchX < screenW / 3) {
+        // ⏪ Double tap kiri
+        player.seekTo(player.getCurrentTime() - 10, true);
+        showOverlayIcon(overlayRew);
+      } else if (touchX > (2 * screenW) / 3) {
+        // ⏩ Double tap kanan
+        player.seekTo(player.getCurrentTime() + 10, true);
+        showOverlayIcon(overlayFwd);
+      }
+      e.preventDefault();
+    } else {
+      // Single tap tengah → toggle play/pause
+      const touchX = e.touches[0].clientX;
+      if (touchX >= screenW / 3 && touchX <= (2 * screenW) / 3) {
+        if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+          overlayPlay.textContent = "▶️";
+        } else {
+          player.playVideo();
+          overlayPlay.textContent = "⏯";
+        }
+        showOverlayIcon(overlayPlay);
+      }
+    }
+
+    lastTap = currentTime;
+  });
+}
+
+function showOverlayIcon(el) {
+  el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 800);
+}
+
+
