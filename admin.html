@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container my-4">
+    <h4 class="mb-3 text-center">📋 Dashboard Membership</h4>
+
+    <div class="card p-3 mb-4">
+      <h6>Tambah Member</h6>
+      <input type="text" id="noWa" class="form-control mb-2" placeholder="Nomor WhatsApp">
+      <input type="email" id="email" class="form-control mb-2" placeholder="Email">
+      <input type="date" id="expired" class="form-control mb-2">
+      <button class="btn btn-primary w-100" onclick="addMember()">Tambah</button>
+      <div id="notif" class="mt-2"></div>
+    </div>
+
+    <div class="card p-3">
+      <h6>Daftar Member</h6>
+      <table class="table table-sm table-bordered mt-2" id="tblMember">
+        <thead class="table-light">
+          <tr>
+            <th>No WhatsApp</th>
+            <th>Email</th>
+            <th>Expired</th>
+            <th>Sisa (hari)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function loadData() {
+      google.script.run.withSuccessHandler(renderTable).getAllMembers();
+    }
+
+    function renderTable(data) {
+      const tbody = document.querySelector("#tblMember tbody");
+      tbody.innerHTML = "";
+      data.forEach(r => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${r.noWa}</td>
+            <td>${r.email}</td>
+            <td>${r.expired}</td>
+            <td>${r.sisaHari}</td>
+          </tr>`;
+      });
+    }
+
+    function addMember() {
+      const noWa = document.getElementById("noWa").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const expired = document.getElementById("expired").value;
+      if (!noWa || !email || !expired) return alert("Isi semua field!");
+
+      google.script.run.withSuccessHandler(msg => {
+        document.getElementById("notif").innerHTML = `<div class='text-success'>${msg}</div>`;
+        loadData();
+      }).addMember(noWa, email, expired);
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
