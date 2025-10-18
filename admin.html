@@ -37,8 +37,14 @@
   </div>
 
   <script>
-    function loadData() {
-      google.script.run.withSuccessHandler(renderTable).getAllMembers();
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyyRONOOWLB52PS5Nzv9D5BxSW0ErAaeJd-Zf9JYo53E0kP4vHfczAx9FxSB03uXwbLXw/exec"; // GANTI DENGAN URL WEB APP KAMU
+
+    async function loadData() {
+      const res = await fetch(SCRIPT_URL + "?action=getAll", { method: "POST" });
+      const json = await res.json();
+
+      if (json.status === "ok") renderTable(json.data);
+      else alert("Gagal memuat data: " + json.message);
     }
 
     function renderTable(data) {
@@ -55,16 +61,37 @@
       });
     }
 
-    function addMember() {
+    async function addMember() {
       const noWa = document.getElementById("noWa").value.trim();
       const email = document.getElementById("email").value.trim();
       const expired = document.getElementById("expired").value;
-      if (!noWa || !email || !expired) return alert("Isi semua field!");
+      const notif = document.getElementById("notif");
 
-      google.script.run.withSuccessHandler(msg => {
-        document.getElementById("notif").innerHTML = `<div class='text-success'>${msg}</div>`;
+      if (!noWa || !email || !expired) {
+        notif.innerHTML = `<div class="text-danger">Isi semua field!</div>`;
+        return;
+      }
+
+      notif.innerHTML = `<div class="text-info">Menambah data...</div>`;
+
+      const formData = new URLSearchParams();
+      formData.append("action", "add");
+      formData.append("noWa", noWa);
+      formData.append("email", email);
+      formData.append("expired", expired);
+
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: formData
+      });
+      const json = await res.json();
+
+      if (json.status === "ok") {
+        notif.innerHTML = `<div class="text-success">${json.message}</div>`;
         loadData();
-      }).addMember(noWa, email, expired);
+      } else {
+        notif.innerHTML = `<div class="text-danger">${json.message}</div>`;
+      }
     }
 
     loadData();
