@@ -1,149 +1,175 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="style.css" rel="stylesheet">
-</head>
-<body>
-  <div class="container my-4">
-    <h4 class="mb-3 text-center">📋 Dashboard Membership</h4>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="container my-4">
+      <h4 class="mb-3 text-center">📋 Dashboard Membership</h4>
 
-    <div class="card p-3 mb-4">
-      <h6>Tambah Member</h6>
-      <input type="text" id="noWa" class="form-control mb-2" placeholder="Nomor WhatsApp">
-      <input type="email" id="email" class="form-control mb-2" placeholder="Email">
-      <input type="date" id="expired" class="form-control mb-2">
-      <button class="btn btn-primary w-100" id="btnAdd">Tambah</button>
-      <div id="notif" class="mt-2"></div>
+      <div class="card p-3 mb-4">
+        <h6>Tambah Member</h6>
+        <input
+          type="text"
+          id="noWa"
+          class="form-control mb-2"
+          placeholder="Nomor WhatsApp"
+        />
+        <input
+          type="email"
+          id="email"
+          class="form-control mb-2"
+          placeholder="Email"
+        />
+        <input type="date" id="expired" class="form-control mb-2" />
+        <button class="btn btn-primary w-100" id="btnAdd">Tambah</button>
+        <div id="notif" class="mt-2"></div>
+      </div>
+
+      <div class="card p-3">
+        <h6>Daftar Member</h6>
+        <table class="table table-sm table-bordered mt-2" id="tblMember">
+          <thead class="table-light">
+            <tr>
+              <th>No WhatsApp</th>
+              <th>Email</th>
+              <th>Expired</th>
+              <th>Sisa (hari)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="emptyNotice" class="text-muted small mt-2"></div>
+      </div>
     </div>
 
-    <div class="card p-3">
-      <h6>Daftar Member</h6>
-      <table class="table table-sm table-bordered mt-2" id="tblMember">
-        <thead class="table-light">
-          <tr>
-            <th>No WhatsApp</th>
-            <th>Email</th>
-            <th>Expired</th>
-            <th>Sisa (hari)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div id="emptyNotice" class="text-muted small mt-2"></div>
-    </div>
-  </div>
+    <script>
+      // ==== GANTI INI DENGAN URL WEB APP APPS SCRIPT KAMU ====
+      const SCRIPT_URL =
+        "https://script.google.com/macros/s/AKfycbxyz12345/exec";
 
-  <script>
-    // ==== GANTI INI DENGAN URL WEB APP APPS SCRIPT KAMU ====
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyyRONOOWLB52PS5Nzv9D5BxSW0ErAaeJd-Zf9JYo53E0kP4vHfczAx9FxSB03uXwbLXw/exec";
+      // Utility to POST form-encoded data and parse JSON
+      async function postForm(params = {}) {
+        const body = new URLSearchParams();
+        for (const k in params) body.append(k, params[k]);
 
-    // Utility to POST form-encoded data and parse JSON
-    async function postForm(params = {}) {
-      const body = new URLSearchParams();
-      for (const k in params) body.append(k, params[k]);
+        const formData = new URLSearchParams();
+        formData.append("action", "getAll");
 
-      const res = await fetch(SCRIPT_URL, {
-        method: "POST",
-        body: body
-      });
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: formData,
+        });
 
-      if (!res.ok) throw new Error("HTTP error " + res.status);
-      return res.json();
-    }
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        return res.json();
+      }
 
-    // Load semua member
-    async function loadData() {
-      try {
-        document.getElementById("emptyNotice").textContent = "Memuat data...";
-        const json = await postForm({ action: "getAll" });
+      // Load semua member
+      async function loadData() {
+        try {
+          document.getElementById("emptyNotice").textContent = "Memuat data...";
+          const json = await postForm({ action: "getAll" });
 
-        if (json.status === "ok" && Array.isArray(json.data)) {
-          renderTable(json.data);
-          document.getElementById("emptyNotice").textContent = "";
-        } else {
-          renderTable([]);
-          document.getElementById("emptyNotice").textContent = "Belum ada data.";
+          if (json.status === "ok" && Array.isArray(json.data)) {
+            renderTable(json.data);
+            document.getElementById("emptyNotice").textContent = "";
+          } else {
+            renderTable([]);
+            document.getElementById("emptyNotice").textContent =
+              "Belum ada data.";
+          }
+        } catch (err) {
+          console.error(err);
+          document.getElementById("emptyNotice").textContent =
+            "Gagal memuat data. Periksa koneksi dan konfigurasi Web App.";
         }
-      } catch (err) {
-        console.error(err);
-        document.getElementById("emptyNotice").textContent = "Gagal memuat data. Periksa koneksi dan konfigurasi Web App.";
-      }
-    }
-
-    // Render tabel
-    function renderTable(data) {
-      const tbody = document.querySelector("#tblMember tbody");
-      tbody.innerHTML = "";
-      if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Tidak ada data</td></tr>`;
-        return;
       }
 
-      data.forEach(r => {
-        const no = escapeHtml(r.noWa || "");
-        const email = escapeHtml(r.email || "");
-        const expired = escapeHtml(r.expired || "");
-        const sisa = typeof r.sisaHari !== "undefined" ? escapeHtml(String(r.sisaHari)) : "-";
-        tbody.innerHTML += `
+      // Render tabel
+      function renderTable(data) {
+        const tbody = document.querySelector("#tblMember tbody");
+        tbody.innerHTML = "";
+        if (!data || data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Tidak ada data</td></tr>`;
+          return;
+        }
+
+        data.forEach((r) => {
+          const no = escapeHtml(r.noWa || "");
+          const email = escapeHtml(r.email || "");
+          const expired = escapeHtml(r.expired || "");
+          const sisa =
+            typeof r.sisaHari !== "undefined"
+              ? escapeHtml(String(r.sisaHari))
+              : "-";
+          tbody.innerHTML += `
           <tr>
             <td>${no}</td>
             <td>${email}</td>
             <td>${expired}</td>
             <td>${sisa}</td>
           </tr>`;
-      });
-    }
-
-    // Tambah member
-    async function addMember() {
-      const noWa = document.getElementById("noWa").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const expired = document.getElementById("expired").value;
-      const notif = document.getElementById("notif");
-
-      if (!noWa || !email || !expired) {
-        notif.innerHTML = `<div class="text-danger">Isi semua field!</div>`;
-        return;
+        });
       }
 
-      notif.innerHTML = `<div class="text-info">Menambah data...</div>`;
+      // Tambah member
+      async function addMember() {
+        const noWa = document.getElementById("noWa").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const expired = document.getElementById("expired").value;
+        const notif = document.getElementById("notif");
 
-      try {
-        const json = await postForm({ action: "add", noWa, email, expired });
-        if (json.status === "ok") {
-          notif.innerHTML = `<div class="text-success">${escapeHtml(json.message || "Berhasil")}</div>`;
-          document.getElementById("noWa").value = "";
-          document.getElementById("email").value = "";
-          document.getElementById("expired").value = "";
-          loadData();
-        } else {
-          notif.innerHTML = `<div class="text-danger">${escapeHtml(json.message || "Gagal")}</div>`;
+        if (!noWa || !email || !expired) {
+          notif.innerHTML = `<div class="text-danger">Isi semua field!</div>`;
+          return;
         }
-      } catch (err) {
-        console.error(err);
-        notif.innerHTML = `<div class="text-danger">Gagal menambah data. Periksa URL Web App & akses (Anyone).</div>`;
+
+        notif.innerHTML = `<div class="text-info">Menambah data...</div>`;
+
+        try {
+          const json = await postForm({ action: "add", noWa, email, expired });
+          if (json.status === "ok") {
+            notif.innerHTML = `<div class="text-success">${escapeHtml(
+              json.message || "Berhasil"
+            )}</div>`;
+            document.getElementById("noWa").value = "";
+            document.getElementById("email").value = "";
+            document.getElementById("expired").value = "";
+            loadData();
+          } else {
+            notif.innerHTML = `<div class="text-danger">${escapeHtml(
+              json.message || "Gagal"
+            )}</div>`;
+          }
+        } catch (err) {
+          console.error(err);
+          notif.innerHTML = `<div class="text-danger">Gagal menambah data. Periksa URL Web App & akses (Anyone).</div>`;
+        }
       }
-    }
 
-    // Simple html escape
-    function escapeHtml(s) {
-      return String(s)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-    }
+      // Simple html escape
+      function escapeHtml(s) {
+        return String(s)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
 
-    // Event binding
-    document.getElementById("btnAdd").addEventListener("click", addMember);
+      // Event binding
+      document.getElementById("btnAdd").addEventListener("click", addMember);
 
-    // Load awal
-    loadData();
-  </script>
-</body>
+      // Load awal
+      loadData();
+    </script>
+  </body>
 </html>
