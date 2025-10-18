@@ -236,7 +236,7 @@
       }
       .member-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(6, 1fr);
         gap: 12px;
         transition: opacity 0.3s ease;
       }
@@ -283,7 +283,7 @@
       @media (max-width: 800px) {
         /* sebelumnya di sini jadi 2 kolom, kita ubah jadi 4 */
         .member-grid {
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(6, 1fr);
           gap: 8px;
           transform: scale(1); /* perkecil seluruh grid */
           transform-origin: top center;
@@ -611,7 +611,7 @@
           const card = document.createElement("div");
           card.className = "member";
           card.innerHTML = `
-        <img src="/assets/img/${name.toLowerCase()}.jpg" alt="${name}">
+        <img src="assets/img/${name.toLowerCase()}.jpg" alt="${name}">
         <div class="member-name">${name}</div>
       `;
           grid.appendChild(card);
