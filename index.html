@@ -43,24 +43,27 @@
     </div>
 
     <script>
-  async function cekMembership() {
-    const no = document.getElementById("whatsapp").value.trim();
-    const result = document.getElementById("hasil"); // perbaikan di sini
+      async function cekMembership() {
+        const no = document.getElementById("whatsapp").value.trim();
+        const result = document.getElementById("result"); // perbaikan di sini
 
-    if (!no) {
-      result.innerHTML = `<div class="alert alert-warning">Masukkan nomor WhatsApp terlebih dahulu.</div>`;
-      return;
-    }
+        if (!no) {
+          result.innerHTML = `<div class="alert alert-warning">Masukkan nomor WhatsApp terlebih dahulu.</div>`;
+          return;
+        }
 
-    result.innerHTML = `<div class="alert alert-info">Memeriksa data...</div>`;
+        result.innerHTML = `<div class="alert alert-info">Memeriksa data...</div>`;
 
-    try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbyyRONOOWLB52PS5Nzv9D5BxSW0ErAaeJd-Zf9JYo53E0kP4vHfczAx9FxSB03uXwbLXw/exec?no=" + encodeURIComponent(no));
-      const data = await res.json();
+        try {
+          const res = await fetch(
+            "https://script.google.com/macros/s/AKfycbyyRONOOWLB52PS5Nzv9D5BxSW0ErAaeJd-Zf9JYo53E0kP4vHfczAx9FxSB03uXwbLXw/exec?no=" +
+              encodeURIComponent(no)
+          );
+          const data = await res.json();
 
-      if (data.status === "success") {
-        const email3 = data.email.substring(0, 3) + "***";
-        result.innerHTML = `
+          if (data.status === "success") {
+            const email3 = data.email.substring(0, 3) + "***";
+            result.innerHTML = `
           <div class="card mt-3 shadow-sm">
             <div class="card-body text-center">
               <p><b>No WhatsApp:</b> ${data.no}</p>
@@ -68,16 +71,16 @@
               <p><b>Sisa hari berlangganan:</b> ${data.sisaHari} hari</p>
             </div>
           </div>`;
-      } else if (data.status === "not_found") {
-        result.innerHTML = `<div class="alert alert-danger">Nomor tidak ditemukan.</div>`;
-      } else {
-        result.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan. Coba lagi.</div>`;
+          } else if (data.status === "not_found") {
+            result.innerHTML = `<div class="alert alert-danger">Nomor tidak ditemukan.</div>`;
+          } else {
+            result.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan. Coba lagi.</div>`;
+          }
+        } catch (err) {
+          console.error(err);
+          result.innerHTML = `<div class="alert alert-danger">Gagal menghubungi server. Pastikan URL Apps Script kamu benar & publik.</div>`;
+        }
       }
-    } catch (err) {
-      console.error(err);
-      result.innerHTML = `<div class="alert alert-danger">Gagal menghubungi server. Pastikan URL Apps Script kamu benar & publik.</div>`;
-    }
-  }
-</script>
+    </script>
   </body>
 </html>
