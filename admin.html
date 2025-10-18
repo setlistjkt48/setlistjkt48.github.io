@@ -16,7 +16,7 @@
       <input type="text" id="noWa" class="form-control mb-2" placeholder="Nomor WhatsApp">
       <input type="email" id="email" class="form-control mb-2" placeholder="Email">
       <input type="date" id="expired" class="form-control mb-2">
-      <button class="btn btn-primary w-100" onclick="addMember()">Tambah</button>
+      <button class="btn btn-primary w-100" id="btnAdd">Tambah</button>
       <div id="notif" class="mt-2"></div>
     </div>
 
@@ -33,34 +33,72 @@
         </thead>
         <tbody></tbody>
       </table>
+      <div id="emptyNotice" class="text-muted small mt-2"></div>
     </div>
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyyRONOOWLB52PS5Nzv9D5BxSW0ErAaeJd-Zf9JYo53E0kP4vHfczAx9FxSB03uXwbLXw/exec"; // GANTI DENGAN URL WEB APP KAMU
+    // ==== GANTI INI DENGAN URL WEB APP APPS SCRIPT KAMU ====
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyyRONOOWLB52PS5Nzv9D5BxSW0ErAaeJd-Zf9JYo53E0kP4vHfczAx9FxSB03uXwbLXw/exec";
 
-    async function loadData() {
-      const res = await fetch(SCRIPT_URL + "?action=getAll", { method: "POST" });
-      const json = await res.json();
+    // Utility to POST form-encoded data and parse JSON
+    async function postForm(params = {}) {
+      const body = new URLSearchParams();
+      for (const k in params) body.append(k, params[k]);
 
-      if (json.status === "ok") renderTable(json.data);
-      else alert("Gagal memuat data: " + json.message);
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: body
+      });
+
+      if (!res.ok) throw new Error("HTTP error " + res.status);
+      return res.json();
     }
 
+    // Load semua member
+    async function loadData() {
+      try {
+        document.getElementById("emptyNotice").textContent = "Memuat data...";
+        const json = await postForm({ action: "getAll" });
+
+        if (json.status === "ok" && Array.isArray(json.data)) {
+          renderTable(json.data);
+          document.getElementById("emptyNotice").textContent = "";
+        } else {
+          renderTable([]);
+          document.getElementById("emptyNotice").textContent = "Belum ada data.";
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("emptyNotice").textContent = "Gagal memuat data. Periksa koneksi dan konfigurasi Web App.";
+      }
+    }
+
+    // Render tabel
     function renderTable(data) {
       const tbody = document.querySelector("#tblMember tbody");
       tbody.innerHTML = "";
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Tidak ada data</td></tr>`;
+        return;
+      }
+
       data.forEach(r => {
+        const no = escapeHtml(r.noWa || "");
+        const email = escapeHtml(r.email || "");
+        const expired = escapeHtml(r.expired || "");
+        const sisa = typeof r.sisaHari !== "undefined" ? escapeHtml(String(r.sisaHari)) : "-";
         tbody.innerHTML += `
           <tr>
-            <td>${r.noWa}</td>
-            <td>${r.email}</td>
-            <td>${r.expired}</td>
-            <td>${r.sisaHari}</td>
+            <td>${no}</td>
+            <td>${email}</td>
+            <td>${expired}</td>
+            <td>${sisa}</td>
           </tr>`;
       });
     }
 
+    // Tambah member
     async function addMember() {
       const noWa = document.getElementById("noWa").value.trim();
       const email = document.getElementById("email").value.trim();
@@ -74,26 +112,37 @@
 
       notif.innerHTML = `<div class="text-info">Menambah data...</div>`;
 
-      const formData = new URLSearchParams();
-      formData.append("action", "add");
-      formData.append("noWa", noWa);
-      formData.append("email", email);
-      formData.append("expired", expired);
-
-      const res = await fetch(SCRIPT_URL, {
-        method: "POST",
-        body: formData
-      });
-      const json = await res.json();
-
-      if (json.status === "ok") {
-        notif.innerHTML = `<div class="text-success">${json.message}</div>`;
-        loadData();
-      } else {
-        notif.innerHTML = `<div class="text-danger">${json.message}</div>`;
+      try {
+        const json = await postForm({ action: "add", noWa, email, expired });
+        if (json.status === "ok") {
+          notif.innerHTML = `<div class="text-success">${escapeHtml(json.message || "Berhasil")}</div>`;
+          document.getElementById("noWa").value = "";
+          document.getElementById("email").value = "";
+          document.getElementById("expired").value = "";
+          loadData();
+        } else {
+          notif.innerHTML = `<div class="text-danger">${escapeHtml(json.message || "Gagal")}</div>`;
+        }
+      } catch (err) {
+        console.error(err);
+        notif.innerHTML = `<div class="text-danger">Gagal menambah data. Periksa URL Web App & akses (Anyone).</div>`;
       }
     }
 
+    // Simple html escape
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    // Event binding
+    document.getElementById("btnAdd").addEventListener("click", addMember);
+
+    // Load awal
     loadData();
   </script>
 </body>
