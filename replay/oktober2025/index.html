@@ -299,6 +299,7 @@
       /* tambahan untuk layar lebih kecil, misal HP di bawah 500px */
       @media (max-width: 500px) {
         .member-grid {
+          grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
           transform: scale(1);
           gap: 6px;
         }
