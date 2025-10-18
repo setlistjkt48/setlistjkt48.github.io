@@ -33,7 +33,7 @@
           type="text"
           id="whatsapp"
           class="form-control mb-3"
-          placeholder="Masukkan No WhatsApp (misal: 089612345678)"
+          placeholder="Masukkan No. WhatsApp (misal: 089612345678)"
         />
         <button class="btn btn-danger w-100" onclick="cekMembership()">
           Cek Sekarang
@@ -42,10 +42,12 @@
 
         <!-- 🆕 Kolom Informasi -->
         <div class="info-box mt-4 text-start">
-          <h6 class="fw-bold mb-2 text-danger">Cara Berlangganan (21 Hari + Replay):</h6>
+          <h6 class="fw-bold mb-2 text-danger">
+            Cara Berlangganan (21 Hari + Replay):
+          </h6>
           <ol class="info-list">
             <li>
-              Donasi Rp. 10.000,- di
+              Donasi <b>Rp. 10.000,-</b> di
               <a href="https://saweria.co/setlistjkt48" target="_blank"
                 >https://saweria.co/setlistjkt48</a
               >
@@ -60,7 +62,16 @@
             </li>
           </ol>
         </div>
+
+        <!-- Tombol baru -->
+        <button class="btn btn-info w-100 text-white disabled mb-4">
+          Replay Show Theater JKT48 (Soon)
+        </button>
       </div>
+      <!-- Footer -->
+      <footer class="footer text-center mt-5 mb-3 text-muted">
+        <small>Copyright © 2025 SetlistJKT48</small>
+      </footer>
     </div>
 
     <script>
@@ -83,11 +94,11 @@
           const data = await res.json();
 
           if (data.status === "success") {
-            const email3 = data.email.substring(0, 3) + "***";
+            const email3 = data.email.substring(0, 4) + "****@*****.com";
             result.innerHTML = `
           <div class="card mt-3 shadow-sm">
             <div class="card-body text-center">
-              <p><b>No WhatsApp:</b> ${data.no}</p>
+              <p><b>No. WhatsApp:</b> ${data.no}</p>
               <p><b>Email:</b> ${email3}</p>
               <p><b>Sisa hari berlangganan:</b> ${data.sisaHari} hari</p>
             </div>
