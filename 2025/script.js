@@ -32,8 +32,14 @@ function onPlayerReady() {
   loadLineup(0);
   updateActiveItem(0);
 
-  // otomatis expand line-up di desktop
-  expanded = window.innerWidth >= 900;
+  // === Default line-up ===
+  // Jika di desktop (layar >= 900px) => tampil
+  // Jika di HP/tablet => tertutup
+  if (window.innerWidth >= 900) {
+    expanded = true;
+  } else {
+    expanded = false;
+  }
   updateVisibleMembers();
 }
 
@@ -295,3 +301,46 @@ function initCustomControls() {
     else document.exitFullscreen();
   });
 }
+/* =====================================================
+   === Auto-hide custom controls di fullscreen ===
+===================================================== */
+let hideControlsTimeout;
+
+function enableAutoHideControls() {
+  const container = document.querySelector(".player-container");
+  const controls = document.querySelector(".custom-controls");
+
+  if (!container || !controls) return;
+
+  // tampilkan controls dulu
+  controls.classList.add("visible");
+
+  function showControls() {
+    controls.classList.add("visible");
+    controls.classList.remove("hidden");
+
+    clearTimeout(hideControlsTimeout);
+    hideControlsTimeout = setTimeout(() => {
+      if (document.fullscreenElement) {
+        controls.classList.remove("visible");
+        controls.classList.add("hidden");
+      }
+    }, 2000); // ⏱️ 2 detik tanpa gerakan
+  }
+
+  // reset timer setiap mouse bergerak
+  container.addEventListener("mousemove", showControls);
+
+  // jalankan pertama kali
+  showControls();
+}
+
+// aktifkan ketika fullscreen aktif
+document.addEventListener("fullscreenchange", () => {
+  if (document.fullscreenElement) {
+    enableAutoHideControls();
+  } else {
+    const controls = document.querySelector(".custom-controls");
+    if (controls) controls.classList.add("visible"); // selalu tampil di non-fullscreen
+  }
+});
