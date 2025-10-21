@@ -571,3 +571,21 @@ footer {
   pointer-events: none;
 }
 
+/* === Overlay Transparan untuk Blokir Klik YouTube Layer === */
+.click-blocker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5; /* pastikan di atas iframe player */
+  background: transparent; /* tidak kelihatan sama sekali */
+  pointer-events: all; /* blok semua klik ke bawahnya */
+}
+
+/* kontrol kustom di atas overlay */
+.cust-progress-wrap,
+.cust-controls {
+  position: absolute;
+  z-index: 10; /* lebih tinggi dari overlay */
+}
