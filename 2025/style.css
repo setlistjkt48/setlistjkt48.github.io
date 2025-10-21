@@ -551,6 +551,24 @@ footer {
     height: 54px;
   }
   .cust-progress-wrap {
-    top: calc(100% - 90px);
+    bottom: 40px; /* ⬅️ turunkan posisinya */
+    height: 20px !important;
   } /* adjust for mobile */
 }
+
+/* === Animasi muncul/hilang custom control === */
+.custom-controls {
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+.custom-controls.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.custom-controls.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
