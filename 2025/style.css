@@ -556,19 +556,18 @@ footer {
   } /* adjust for mobile */
 }
 
-/* === Animasi muncul/hilang custom control === */
-.custom-controls {
+/* === Transisi auto-hide untuk custom player controls === */
+.cust-controls,
+.cust-progress-wrap {
   opacity: 1;
   transition: opacity 0.4s ease;
+  pointer-events: all;
+  user-select: none;
 }
 
-.custom-controls.hidden {
+.cust-controls.hidden,
+.cust-progress-wrap.hidden {
   opacity: 0;
   pointer-events: none;
-}
-
-.custom-controls.visible {
-  opacity: 1;
-  pointer-events: all;
 }
 
