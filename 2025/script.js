@@ -367,3 +367,59 @@ function initAutoHideCustomControls() {
 }
 
 document.addEventListener("DOMContentLoaded", initAutoHideCustomControls);
+
+/* =====================================================
+   === Gesture Overlay: Play / Pause / Forward / Rewind ===
+===================================================== */
+function initGestureOverlay() {
+  const overlay = document.querySelector(".gesture-overlay");
+  const zoneLeft = overlay.querySelector(".gesture-zone.left");
+  const zoneCenter = overlay.querySelector(".gesture-zone.center");
+  const zoneRight = overlay.querySelector(".gesture-zone.right");
+  const iconRewind = overlay.querySelector(".gesture-icon.rewind");
+  const iconPlayPause = overlay.querySelector(".gesture-icon.playpause");
+  const iconForward = overlay.querySelector(".gesture-icon.forward");
+
+  if (!overlay || !player) return;
+
+  // SINGLE CLICK di tengah → Play / Pause
+  let clickTimeout = null;
+  zoneCenter.addEventListener("click", () => {
+    if (clickTimeout) clearTimeout(clickTimeout);
+    clickTimeout = setTimeout(() => {
+      const state = player.getPlayerState();
+      if (state === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+        iconPlayPause.textContent = "⏸";
+      } else {
+        player.playVideo();
+        iconPlayPause.textContent = "▶";
+      }
+      showIcon(iconPlayPause);
+    }, 200);
+  });
+
+  // DOUBLE CLICK kanan → +10 detik
+  zoneRight.addEventListener("dblclick", (e) => {
+    e.preventDefault();
+    const current = player.getCurrentTime();
+    player.seekTo(current + 10, true);
+    showIcon(iconForward);
+  });
+
+  // DOUBLE CLICK kiri → -10 detik
+  zoneLeft.addEventListener("dblclick", (e) => {
+    e.preventDefault();
+    const current = player.getCurrentTime();
+    player.seekTo(Math.max(0, current - 10), true);
+    showIcon(iconRewind);
+  });
+
+  function showIcon(icon) {
+    icon.classList.add("show");
+    setTimeout(() => icon.classList.remove("show"), 600);
+  }
+}
+
+// aktifkan setelah DOM siap
+document.addEventListener("DOMContentLoaded", initGestureOverlay);
