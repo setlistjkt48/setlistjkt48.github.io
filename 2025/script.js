@@ -301,46 +301,69 @@ function initCustomControls() {
     else document.exitFullscreen();
   });
 }
+
 /* =====================================================
-   === Auto-hide custom controls di fullscreen ===
+   === AUTO HIDE CUSTOM CONTROL PLAYER (CUST + PROGRESS)
 ===================================================== */
-let hideControlsTimeout;
+let hideTimer;
+let isFullscreen = false;
 
-function enableAutoHideControls() {
+function initAutoHideCustomControls() {
   const container = document.querySelector(".player-container");
-  const controls = document.querySelector(".custom-controls");
+  const controls = document.querySelector(".cust-controls");
+  const progress = document.querySelector(".cust-progress-wrap");
 
-  if (!container || !controls) return;
-
-  // tampilkan controls dulu
-  controls.classList.add("visible");
-
-  function showControls() {
-    controls.classList.add("visible");
-    controls.classList.remove("hidden");
-
-    clearTimeout(hideControlsTimeout);
-    hideControlsTimeout = setTimeout(() => {
-      if (document.fullscreenElement) {
-        controls.classList.remove("visible");
-        controls.classList.add("hidden");
-      }
-    }, 2000); // ⏱️ 2 detik tanpa gerakan
+  if (!container || (!controls && !progress)) {
+    console.warn(
+      "⚠️ Elemen .player-container, .cust-controls, atau .cust-progress-wrap tidak ditemukan"
+    );
+    return;
   }
 
-  // reset timer setiap mouse bergerak
-  container.addEventListener("mousemove", showControls);
+  const showAllControls = () => {
+    [controls, progress].forEach((el) => {
+      if (el) {
+        el.classList.add("visible");
+        el.classList.remove("hidden");
+      }
+    });
+    clearTimeout(hideTimer);
 
-  // jalankan pertama kali
-  showControls();
+    if (isFullscreen) {
+      hideTimer = setTimeout(() => {
+        [controls, progress].forEach((el) => {
+          if (el) {
+            el.classList.remove("visible");
+            el.classList.add("hidden");
+          }
+        });
+      }, 2000); // ⏱️ hide setelah 2 detik tanpa gerakan
+    }
+  };
+
+  // aktifkan kembali ketika mouse bergerak
+  container.addEventListener("mousemove", showAllControls);
+  container.addEventListener("click", showAllControls);
+  container.addEventListener("touchstart", showAllControls);
+
+  // deteksi perubahan fullscreen
+  document.addEventListener("fullscreenchange", () => {
+    isFullscreen = !!document.fullscreenElement;
+    if (isFullscreen) {
+      showAllControls();
+    } else {
+      [controls, progress].forEach((el) => {
+        if (el) {
+          el.classList.add("visible");
+          el.classList.remove("hidden");
+        }
+      });
+      clearTimeout(hideTimer);
+    }
+  });
+
+  // tampilkan saat pertama
+  showAllControls();
 }
 
-// aktifkan ketika fullscreen aktif
-document.addEventListener("fullscreenchange", () => {
-  if (document.fullscreenElement) {
-    enableAutoHideControls();
-  } else {
-    const controls = document.querySelector(".custom-controls");
-    if (controls) controls.classList.add("visible"); // selalu tampil di non-fullscreen
-  }
-});
+document.addEventListener("DOMContentLoaded", initAutoHideCustomControls);
