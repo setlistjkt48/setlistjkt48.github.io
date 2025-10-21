@@ -53,7 +53,8 @@
               >
             </li>
             <li>
-              Tulis <b>Email</b> kamu & <b>No. WhatsApp</b> kamu di kolom pesan saweria.
+              Tulis <b>Email</b> kamu & <b>No. WhatsApp</b> kamu di kolom pesan
+              saweria.
             </li>
             <li>
               Tunggu max. 24 jam (Kamu Verif Jika mendapat Email Info
@@ -71,6 +72,68 @@
           Replay Show Theater JKT48 (Soon)
         </button>
       </div>
+
+      <!-- 🗓️ Jadwal Show Theater -->
+      <div class="schedule mt-4 text-start">
+        <h6 class="fw-bold mb-3 text-danger text-center">
+          🎭 Jadwal Show Theater JKT48
+        </h6>
+
+        <!-- Jadwal 1 -->
+        <div class="show-card">
+          <img
+            src="assets/sambilmenggandengerattanganku.png"
+            alt="Show 1"
+            class="show-thumb"
+          />
+          <div class="show-info">
+            <h6 class="show-title">Sambil Menggandeng Erat Tanganku</h6>
+            <p>🗓️ Selasa, 21 Okt 2025</p>
+            <p>🕒 19:00 WIB</p>
+            <p>
+              👥 Alya, Amanda, Daisy, Danella, Fiony, Gracia, Greesel, Lana,
+              Lia, Lyn, Michie, Muthe
+            </p>
+          </div>
+        </div>
+
+        <!-- Jadwal 2 -->
+        <div class="show-card">
+          <img
+            src="assets/aturananticinta.png"
+            alt="Show 2"
+            class="show-thumb"
+          />
+          <div class="show-info">
+            <h6 class="show-title">Aturan Anti Cinta (STS Anindya)</h6>
+            <p>🗓️ Rabu, 22 Okt 2025</p>
+            <p>🕒 19:00 WIB</p>
+            <p>
+              👥 Anindya, Cathy, Chelsea, Cynthia, Daisy, Danella, Eli, Elin,
+              Fritzy, Gendis, Gita, Gracie, Indah, Jessi, Lyn, Olla
+            </p>
+          </div>
+        </div>
+
+        <!-- Jadwal 3 -->
+        <div class="show-card">
+          <img
+            src="assets/pertaruhancinta.png"
+            alt="Show 3"
+            class="show-thumb"
+          />
+          <div class="show-info">
+            <h6 class="show-title">Pertaruhan Cinta (STS Lulu)</h6>
+            <p>🗓️ Kamis, 23 Okt 2025</p>
+            <p>🕒 19:00 WIB</p>
+            <p>
+              👥 Amanda, Cathy, Christy, Freya, Gita, Gracie, Jessi, Lia, Lulu,
+              Marsha, Michie, Olla
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Footer -->
       <footer class="footer text-center mt-5 mb-3 text-muted">
         <small>Copyright © 2025 SetlistJKT48</small>
@@ -97,7 +160,7 @@
           const data = await res.json();
 
           if (data.status === "success") {
-            const email3 = data.email.substring(0, 4) + "****@*****.com";
+            const email3 = data.email.substring(0, 4) + "*****@*****.com";
             result.innerHTML = `
           <div class="card mt-3 shadow-sm">
             <div class="card-body text-center">
