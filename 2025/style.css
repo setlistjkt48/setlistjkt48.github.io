@@ -578,9 +578,9 @@ footer {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 5; /* pastikan di atas iframe player */
-  background: transparent; /* tidak kelihatan sama sekali */
-  pointer-events: all; /* blok semua klik ke bawahnya */
+  background: transparent;
+  z-index: 5;
+  pointer-events: none; /* ⬅️ biar tidak blokir gesture overlay */
 }
 
 /* kontrol kustom di atas overlay */
@@ -598,7 +598,8 @@ footer {
   width: 100%;
   height: 100%;
   display: flex;
-  z-index: 8; /* di atas click-blocker, di bawah progress */
+  z-index: 8; /* di atas click-blocker */
+  pointer-events: all; /* ⬅️ pastikan overlay menerima klik */
 }
 
 .gesture-zone {
