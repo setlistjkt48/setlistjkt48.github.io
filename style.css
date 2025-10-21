@@ -3,7 +3,7 @@ body {
   background: linear-gradient(180deg, #ffffff, #f7f7f7);
   font-family: "Poppins", "Segoe UI", sans-serif;
   color: #222;
-  margin: 0;
+  margin: 10px;
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -18,7 +18,7 @@ body {
   width: 100%;
   max-width: 500px;
   padding: 40px 16px;
-  margin-top: 30px; /* dorong sedikit dari atas */
+  margin-top: 10px; /* dorong sedikit dari atas */
 }
 
 /* ==== LOGO HEADER ==== */
@@ -26,7 +26,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .logo {
@@ -91,8 +91,11 @@ button.btn-danger:hover {
 /* ==== RESPONSIVE ==== */
 @media (max-width: 768px) {
   .main-wrapper {
-    margin-top: 20px;
+    margin-top: 10px;
     padding: 24px 16px;
+  }
+  .header-logo {
+    margin-bottom: 10px;
   }
   .logo {
     width: 80px;
@@ -140,7 +143,7 @@ button.btn-danger:hover {
   background: linear-gradient(90deg, #1535a0, #1535a0);
   border: none;
   border-radius: 10px;
-  margin-top: 30px;
+  margin-top: 40px;
   font-weight: 600;
   letter-spacing: 0.3px;
   transition: 0.25s;
@@ -154,6 +157,80 @@ button.btn-danger:hover {
 .btn-info.disabled {
   opacity: 0.8;
   cursor: not-allowed;
+}
+
+/* ==== JADWAL SHOW THEATER ==== */
+.schedule {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 18px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+.show-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+  background: #fffafa;
+  border: 1px solid #ffe0e0;
+  border-radius: 12px;
+  padding: 14px;
+  transition: 0.3s ease;
+}
+
+.show-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.show-thumb {
+  width: 90px;
+  height: 90px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin: auto;
+}
+
+.show-info {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.show-info p {
+  margin: 2px 0; /* ⬅️ hilangkan spasi antar baris */
+  line-height: 1.4; /* sedikit rapat agar tetap terbaca nyaman */
+}
+
+.show-title {
+  font-weight: 600;
+  color: #d50000;
+  margin-bottom: 6px;
+}
+
+/* Responsif */
+@media (max-width: 768px) {
+  input.form-control::placeholder {
+    font-size: 0.85rem; /* ukuran lebih kecil */
+  }
+
+  .show-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .show-thumb {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+  }
+
+  .show-info {
+    text-align: left;
+    font-size: 0.85rem;
+  }
 }
 
 /* Footer */
