@@ -464,7 +464,7 @@ footer {
   justify-content: space-between;
   align-items: center;
   padding: 8px 14px; /* hapus padding sisi kiri/kanan jika mau rapat total */
-  background: linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.55));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
   border-radius: 0; /* biar rata ke tepi */
   z-index: 31;
 }
@@ -508,7 +508,7 @@ footer {
 }
 
 .volume-range {
-  width: 120px;
+  width: 80px;
   height: 6px;
   -webkit-appearance: none;
   appearance: none;
@@ -540,7 +540,7 @@ footer {
 /* responsive: small screens -> stack left controls and shrink sliders */
 @media (max-width: 720px) {
   .volume-range {
-    width: 80px;
+    width: 60px;
   }
   .time-display {
     min-width: 90px;
@@ -550,9 +550,13 @@ footer {
     width: 96px;
     height: 54px;
   }
+
+  .cust-controls {
+    padding: 0px 14px;
+  }
   .cust-progress-wrap {
     bottom: 40px; /* ⬅️ turunkan posisinya */
-    height: 20px !important;
+    height: 0px !important;
   } /* adjust for mobile */
 }
 
@@ -578,9 +582,9 @@ footer {
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 2;
   background: transparent;
-  z-index: 5;
-  pointer-events: none; /* ⬅️ biar tidak blokir gesture overlay */
+  pointer-events: none; /* biarkan gesture di atasnya menangkap klik */
 }
 
 /* kontrol kustom di atas overlay */
@@ -598,8 +602,8 @@ footer {
   width: 100%;
   height: 100%;
   display: flex;
-  z-index: 8; /* di atas click-blocker */
-  pointer-events: all; /* ⬅️ pastikan overlay menerima klik */
+  z-index: 3;
+  pointer-events: all; /* overlay bisa diklik */
 }
 
 .gesture-zone {
@@ -607,25 +611,207 @@ footer {
   display: flex;
   justify-content: center;
   align-items: center;
-  user-select: none;
 }
 
 .gesture-icon {
-  font-size: 64px;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.9);
   opacity: 0;
   transition: opacity 0.25s ease;
-  text-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
   pointer-events: none;
+  text-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
 }
 
 .gesture-icon.show {
   opacity: 1;
 }
 
+.cust-progress-wrap,
+.cust-controls {
+  position: absolute;
+  z-index: 10;
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .gesture-icon {
-    font-size: 48px;
+    font-size: 16px;
   }
 }
 
+.player-container,
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* player iframe agar tidak tangkap klik */
+#player iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none; /* ⬅️ kunci! */
+}
+
+/* === Keyboard Icon Overlay (di atas video-wrapper) === */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* === Keyboard Indicator: Posisi selaras dengan Gesture Icon === */
+.video-wrapper #keyboardIndicator.center {
+  font-size: 48px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.video-wrapper #keyboardIndicator.left {
+  font-size: 24px;
+  position: absolute;
+  top: 50%;
+  left: 8%;
+  transform: translate(-50%, -50%);
+}
+
+.video-wrapper #keyboardIndicator.right {
+  font-size: 24px;
+  position: absolute;
+  top: 50%;
+  right: 8%;
+  transform: translate(50%, -50%);
+}
+
+/* Ukuran menyesuaikan layar agar proporsional */
+@media (max-width: 768px) {
+  .video-wrapper #keyboardIndicator.center {
+    font-size: 24px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .video-wrapper #keyboardIndicator.left {
+    position: absolute;
+    top: 50%;
+    left: 15%;
+    transform: translate(-50%, -50%);
+  }
+
+  .video-wrapper #keyboardIndicator.right {
+    position: absolute;
+    top: 50%;
+    right: 15%;
+    transform: translate(50%, -50%);
+  }
+}
+
+/* === MODE HP: Auto-hide Custom Controls === */
+@media (max-width: 900px) {
+  /* Saat video diputar: sembunyikan control bar */
+  .player-container.mobile-playing .cust-controls {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(30px); /* animasi turun halus */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  /* Saat video diputar: progress bar turun ke paling bawah */
+  .player-container.mobile-playing .cust-progress-wrap {
+    bottom: 3px; /* menempel ke bawah */
+    transition: bottom 0.3s ease;
+  }
+
+  /* Saat video pause atau user tap: tampil kembali */
+  .player-container.mobile-playing.mobile-showing .cust-controls {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+
+  .player-container.mobile-playing.mobile-showing .cust-progress-wrap {
+    bottom: 40px; /* kembali ke posisi normal */
+  }
+}
+
+/* === MODE HP: Video Full Width (Kanan & Kiri Menempel) === */
+@media (max-width: 900px) {
+  /* Buat player section melebar penuh */
+  .player-wrap {
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: #000; /* hilangkan background luar */
+  }
+
+  /* Pastikan player-container melebar penuh layar */
+  .player-container {
+    width: 100vw !important; /* penuh viewport */
+    margin-left: calc(-1 * (50vw - 50%)); /* trik agar menempel sisi kiri */
+    border-radius: 0 !important;
+    background: #000;
+  }
+
+  /* Hilangkan padding horizontal main container */
+  main,
+  .grid {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100vw !important;
+  }
+
+  /* Pastikan playlist tetap rapi di bawah video */
+  .playlist {
+    padding: 12px;
+    border-radius: 0;
+    margin-top: 0;
+  }
+
+  /* Progress bar & control tetap di atas video */
+  .cust-progress-wrap,
+  .cust-controls {
+    border-radius: 0;
+  }
+}
+
+/* === Bersihkan semua overlay YouTube bawaan === */
+#player iframe {
+  pointer-events: none !important; /* mencegah klik langsung */
+}
+
+/* Hilangkan overlay bawaan (title, share, logo, dsb) */
+.ytp-chrome-top,
+.ytp-show-cards-title,
+.ytp-title,
+.ytp-gradient-top,
+.ytp-chrome-bottom,
+.ytp-pause-overlay,
+.ytp-tooltip,
+.ytp-share-button,
+.ytp-watch-later-button,
+.ytp-youtube-button {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Hilangkan watermark YouTube */
+.ytp-watermark {
+  display: none !important;
+}
+
+/* Pastikan video full area */
+#player,
+#player iframe {
+  width: 100% !important;
+  height: 100% !important;
+  background: #000 !important;
+}
