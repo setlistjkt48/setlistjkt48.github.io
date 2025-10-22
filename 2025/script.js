@@ -2,6 +2,8 @@ let player;
 let currentIndex = 0;
 let expanded = false;
 let lastVolume = 100;
+let keyboardCooldown = false;
+const keyboardCooldownDelay = 100; // jeda 100ms antar-tekan
 
 // === YouTube Player Setup ===
 function onYouTubeIframeAPIReady() {
@@ -12,13 +14,16 @@ function onYouTubeIframeAPIReady() {
     playerVars: {
       autoplay: 0,
       controls: 0, // gunakan kontrol custom kita
+      showinfo: 0,
       rel: 0,
       modestbranding: 1,
       fs: 0,
-      disablekb: 1,
+      disablekb: 0,
       iv_load_policy: 3,
       showinfo: 0,
       playsinline: 1,
+      enablejsapi: 1, // wajib aktif untuk kontrol via JS
+      origin: "https://setlistjkt48.github.io",
     },
     events: {
       onReady: onPlayerReady,
@@ -45,6 +50,8 @@ function onPlayerReady() {
 
 function onPlayerStateChange(event) {
   if (event.data === YT.PlayerState.ENDED) playNextVideo();
+  if (event.data === YT.PlayerState.PLAYING) updatePlayPauseIcons("playing");
+  if (event.data === YT.PlayerState.PAUSED) updatePlayPauseIcons("paused");
 }
 
 /* =====================================================
@@ -231,10 +238,10 @@ function initCustomControls() {
     const st = player.getPlayerState();
     if (st === YT.PlayerState.PLAYING) {
       player.pauseVideo();
-      playBtn.textContent = "▶";
+      updatePlayPauseIcons("paused");
     } else {
       player.playVideo();
-      playBtn.textContent = "⏸";
+      updatePlayPauseIcons("playing");
     }
   });
 
@@ -269,7 +276,7 @@ function initCustomControls() {
     player.setVolume(v);
     if (v === 0) {
       player.mute();
-      volBtn.textContent = "🔇";
+      volBtn.textContent = "🔈";
     } else {
       player.unMute();
       volBtn.textContent = "🔊";
@@ -286,7 +293,7 @@ function initCustomControls() {
       player.setVolume(lastVolume);
     } else {
       player.mute();
-      volBtn.textContent = "🔇";
+      volBtn.textContent = "🔈";
       lastVolume = volRange.value;
       volRange.value = 0;
     }
@@ -303,76 +310,64 @@ function initCustomControls() {
 }
 
 /* =====================================================
-   === AUTO HIDE CUSTOM CONTROL PLAYER (CUST + PROGRESS)
+   === MODE HP: Auto-hide control + progress reposition ===
 ===================================================== */
-let hideTimer;
-let isFullscreen = false;
+function initMobileControlBehavior() {
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (!isMobile) return; // hanya aktif di HP
 
-function initAutoHideCustomControls() {
   const container = document.querySelector(".player-container");
-  const controls = document.querySelector(".cust-controls");
-  const progress = document.querySelector(".cust-progress-wrap");
+  const controls = container.querySelector(".cust-controls");
+  const progress = container.querySelector(".cust-progress-wrap");
+  const overlay = container.querySelector(".gesture-overlay");
 
-  if (!container || (!controls && !progress)) {
-    console.warn(
-      "⚠️ Elemen .player-container, .cust-controls, atau .cust-progress-wrap tidak ditemukan"
-    );
-    return;
-  }
+  if (!container || !controls || !progress || !overlay) return;
 
-  const showAllControls = () => {
-    [controls, progress].forEach((el) => {
-      if (el) {
-        el.classList.add("visible");
-        el.classList.remove("hidden");
-      }
-    });
-    clearTimeout(hideTimer);
-
-    if (isFullscreen) {
-      hideTimer = setTimeout(() => {
-        [controls, progress].forEach((el) => {
-          if (el) {
-            el.classList.remove("visible");
-            el.classList.add("hidden");
-          }
-        });
-      }, 2000); // ⏱️ hide setelah 2 detik tanpa gerakan
-    }
+  // Ketika video mulai bermain → sembunyikan kontrol
+  const onPlay = () => {
+    container.classList.add("mobile-playing");
   };
 
-  // aktifkan kembali ketika mouse bergerak
-  container.addEventListener("mousemove", showAllControls);
-  container.addEventListener("click", showAllControls);
-  container.addEventListener("touchstart", showAllControls);
+  // Ketika video dijeda → tampilkan kontrol kembali
+  const onPause = () => {
+    container.classList.remove("mobile-playing");
+  };
 
-  // deteksi perubahan fullscreen
-  document.addEventListener("fullscreenchange", () => {
-    isFullscreen = !!document.fullscreenElement;
-    if (isFullscreen) {
-      showAllControls();
-    } else {
-      [controls, progress].forEach((el) => {
-        if (el) {
-          el.classList.add("visible");
-          el.classList.remove("hidden");
-        }
+  // Hubungkan event player
+  const waitPlayer = setInterval(() => {
+    if (player && typeof player.addEventListener === "function") {
+      clearInterval(waitPlayer);
+      player.addEventListener("onStateChange", (event) => {
+        if (event.data === YT.PlayerState.PLAYING) onPlay();
+        if (event.data === YT.PlayerState.PAUSED) onPause();
       });
-      clearTimeout(hideTimer);
     }
-  });
+  }, 300);
 
-  // tampilkan saat pertama
-  showAllControls();
+  // Tap layar = tampilkan sementara kontrol
+  let tapTimer = null;
+  overlay.addEventListener("click", () => {
+    if (tapTimer) clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => {
+      container.classList.add("mobile-showing");
+      setTimeout(() => {
+        container.classList.remove("mobile-showing");
+      }, 3000); // tampil selama 3 detik
+    }, 180);
+  });
 }
 
-document.addEventListener("DOMContentLoaded", initAutoHideCustomControls);
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(initMobileControlBehavior, 1500);
+});
 
 /* =====================================================
-   === Gesture Overlay: Play / Pause / Forward / Rewind ===
+   === Gesture Overlay - Play, Pause, Forward, Rewind ===
 ===================================================== */
 function initGestureOverlay() {
   const overlay = document.querySelector(".gesture-overlay");
+  if (!overlay) return;
+
   const zoneLeft = overlay.querySelector(".gesture-zone.left");
   const zoneCenter = overlay.querySelector(".gesture-zone.center");
   const zoneRight = overlay.querySelector(".gesture-zone.right");
@@ -380,46 +375,235 @@ function initGestureOverlay() {
   const iconPlayPause = overlay.querySelector(".gesture-icon.playpause");
   const iconForward = overlay.querySelector(".gesture-icon.forward");
 
-  if (!overlay || !player) return;
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  let tapTimer = null;
+  let lastTapLeft = 0;
+  let lastTapRight = 0;
 
-  // SINGLE CLICK di tengah → Play / Pause
-  let clickTimeout = null;
-  zoneCenter.addEventListener("click", () => {
-    if (clickTimeout) clearTimeout(clickTimeout);
-    clickTimeout = setTimeout(() => {
-      const state = player.getPlayerState();
-      if (state === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-        iconPlayPause.textContent = "⏸";
-      } else {
-        player.playVideo();
-        iconPlayPause.textContent = "▶";
+  if (isMobile) {
+    // === MODE HP ===
+
+    // 1x tap di mana saja pada frame = Play / Pause
+    overlay.addEventListener("click", (e) => {
+      // deteksi apakah tap ini bagian dari double tap
+      const now = Date.now();
+      const zone = e.target.closest(".gesture-zone");
+
+      // deteksi double tap kanan
+      if (zone === zoneRight && now - lastTapRight < 300) {
+        e.preventDefault();
+        const current = player.getCurrentTime();
+        player.seekTo(current + 10, true);
+        showIcon(iconForward);
+        lastTapRight = 0; // reset
+        return;
       }
-      showIcon(iconPlayPause);
-    }, 200);
-  });
 
-  // DOUBLE CLICK kanan → +10 detik
-  zoneRight.addEventListener("dblclick", (e) => {
-    e.preventDefault();
-    const current = player.getCurrentTime();
-    player.seekTo(current + 10, true);
-    showIcon(iconForward);
-  });
+      // deteksi double tap kiri
+      if (zone === zoneLeft && now - lastTapLeft < 300) {
+        e.preventDefault();
+        const current = player.getCurrentTime();
+        player.seekTo(Math.max(0, current - 10), true);
+        showIcon(iconRewind);
+        lastTapLeft = 0; // reset
+        return;
+      }
 
-  // DOUBLE CLICK kiri → -10 detik
-  zoneLeft.addEventListener("dblclick", (e) => {
-    e.preventDefault();
-    const current = player.getCurrentTime();
-    player.seekTo(Math.max(0, current - 10), true);
-    showIcon(iconRewind);
-  });
+      // kalau bukan double tap → simpan waktu tap
+      if (zone === zoneLeft) lastTapLeft = now;
+      if (zone === zoneRight) lastTapRight = now;
 
+      // 1x tap play/pause di mana saja
+      if (tapTimer) clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => {
+        const state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+          updatePlayPauseIcons("paused");
+        } else {
+          player.playVideo();
+          updatePlayPauseIcons("playing");
+        }
+        showIcon(iconPlayPause);
+      }, 200);
+    });
+  } else {
+    // === MODE DESKTOP ===
+    // Nonaktifkan klik kiri & kanan
+    zoneLeft.style.pointerEvents = "none";
+    zoneRight.style.pointerEvents = "none";
+
+    // Klik tengah 1x = play/pause
+    zoneCenter.addEventListener("click", () => {
+      if (tapTimer) clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => {
+        const state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+          updatePlayPauseIcons("paused");
+        } else {
+          player.playVideo();
+          updatePlayPauseIcons("playing");
+        }
+        showIcon(iconPlayPause);
+      }, 200);
+    });
+
+    // Double klik = fullscreen toggle
+    overlay.addEventListener("dblclick", (e) => {
+      e.preventDefault();
+      toggleFullscreen();
+    });
+  }
+
+  // === Helper tampilkan ikon gesture ===
   function showIcon(icon) {
     icon.classList.add("show");
     setTimeout(() => icon.classList.remove("show"), 600);
   }
 }
 
-// aktifkan setelah DOM siap
-document.addEventListener("DOMContentLoaded", initGestureOverlay);
+// Pastikan dijalankan setelah halaman siap
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(initGestureOverlay, 1000); // beri waktu player load
+});
+
+/* =====================================================
+   === Keyboard Controls (Space, Arrow, F) ===
+===================================================== */
+
+function initKeyboardControls() {
+  document.addEventListener("keydown", (e) => {
+    if (keyboardCooldown) return; // ⛔ abaikan jika masih cooldown
+
+    if (!player || typeof player.getPlayerState !== "function") return;
+    const tag = document.activeElement.tagName.toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+
+    // mulai cooldown
+    keyboardCooldown = true;
+    setTimeout(() => (keyboardCooldown = false), keyboardCooldownDelay);
+
+    switch (e.key.toLowerCase()) {
+      case " ":
+      case "spacebar":
+        e.preventDefault();
+        const state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+          showKeyboardIcon("❚❚");
+          updatePlayPauseIcons("paused");
+        } else {
+          player.playVideo();
+          showKeyboardIcon("▶");
+          updatePlayPauseIcons("playing");
+        }
+        break;
+
+      case "arrowright":
+        e.preventDefault();
+        player.seekTo(player.getCurrentTime() + 10, true);
+        showKeyboardIcon("⟳ +10s");
+        break;
+
+      case "arrowleft":
+        e.preventDefault();
+        player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
+        showKeyboardIcon("-10s ⟲");
+        break;
+
+      case "f":
+        e.preventDefault();
+        toggleFullscreen();
+        showKeyboardIcon("⛶");
+        break;
+    }
+  });
+}
+
+/* ---------- Helper tampilkan animasi icon keyboard di posisi berbeda ---------- */
+function showKeyboardIcon(symbol) {
+  const wrapper = document.querySelector(".video-wrapper");
+  if (!wrapper) return;
+
+  // jika sudah ada indicator sebelumnya, hapus dulu biar bersih
+  let indicator = wrapper.querySelector("#keyboardIndicator");
+  if (indicator) indicator.remove();
+
+  // buat ulang elemen indicator
+  indicator = document.createElement("div");
+  indicator.id = "keyboardIndicator";
+  indicator.textContent = symbol;
+  wrapper.appendChild(indicator);
+
+  // posisi berdasarkan jenis simbol
+  if (symbol === "⟳ +10s") {
+    indicator.classList.add("right");
+  } else if (symbol === "-10s ⟲") {
+    indicator.classList.add("left");
+  } else {
+    indicator.classList.add("center");
+  }
+
+  // animasi muncul
+  requestAnimationFrame(() => {
+    indicator.classList.add("show");
+  });
+
+  // hapus setelah 700ms
+  setTimeout(() => indicator.remove(), 700);
+}
+
+/* ---------- Toggle fullscreen universal ---------- */
+function toggleFullscreen() {
+  const container = document.querySelector(".player-container");
+  if (!container) return;
+
+  // Jika BELUM fullscreen
+  if (
+    !document.fullscreenElement &&
+    !document.webkitFullscreenElement &&
+    !document.mozFullScreenElement &&
+    !document.msFullscreenElement
+  ) {
+    if (container.requestFullscreen) {
+      container.requestFullscreen();
+    } else if (container.webkitRequestFullscreen) {
+      container.webkitRequestFullscreen(); // Safari
+    } else if (container.mozRequestFullScreen) {
+      container.mozRequestFullScreen(); // Firefox lama
+    } else if (container.msRequestFullscreen) {
+      container.msRequestFullscreen(); // IE/Edge lama
+    }
+  } else {
+    // Jika SUDAH fullscreen → keluar
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
+}
+
+// Jalankan setelah halaman siap
+document.addEventListener("DOMContentLoaded", initKeyboardControls);
+
+/* =====================================================
+   === Sinkronisasi Semua Icon Play/Pause ===
+===================================================== */
+function updatePlayPauseIcons(state) {
+  const playBtn = document.getElementById("btnPlayPause");
+  const gestureIcon = document.querySelector(".gesture-icon.playpause");
+
+  if (state === "playing") {
+    if (playBtn) playBtn.textContent = "❚❚";
+    if (gestureIcon) gestureIcon.textContent = "❚❚";
+  } else if (state === "paused") {
+    if (playBtn) playBtn.textContent = "▶";
+    if (gestureIcon) gestureIcon.textContent = "▶";
+  }
+}
