@@ -382,38 +382,38 @@ function initGestureOverlay() {
 
   if (isMobile) {
     // === MODE HP ===
-
-    // 1x tap di mana saja pada frame = Play / Pause
     overlay.addEventListener("click", (e) => {
-      // deteksi apakah tap ini bagian dari double tap
       const now = Date.now();
       const zone = e.target.closest(".gesture-zone");
+      let isDoubleTap = false;
 
-      // deteksi double tap kanan
+      // --- DETEKSI DOUBLE TAP KANAN ---
       if (zone === zoneRight && now - lastTapRight < 300) {
         e.preventDefault();
         const current = player.getCurrentTime();
         player.seekTo(current + 10, true);
         showIcon(iconForward);
-        lastTapRight = 0; // reset
-        return;
+        isDoubleTap = true;
       }
+      lastTapRight = now;
 
-      // deteksi double tap kiri
+      // --- DETEKSI DOUBLE TAP KIRI ---
       if (zone === zoneLeft && now - lastTapLeft < 300) {
         e.preventDefault();
         const current = player.getCurrentTime();
         player.seekTo(Math.max(0, current - 10), true);
         showIcon(iconRewind);
-        lastTapLeft = 0; // reset
+        isDoubleTap = true;
+      }
+      lastTapLeft = now;
+
+      // --- Jika double tap terdeteksi, jangan lanjut play/pause ---
+      if (isDoubleTap) {
+        if (tapTimer) clearTimeout(tapTimer);
         return;
       }
 
-      // kalau bukan double tap → simpan waktu tap
-      if (zone === zoneLeft) lastTapLeft = now;
-      if (zone === zoneRight) lastTapRight = now;
-
-      // 1x tap play/pause di mana saja
+      // --- 1x Tap di mana saja = Play / Pause ---
       if (tapTimer) clearTimeout(tapTimer);
       tapTimer = setTimeout(() => {
         const state = player.getPlayerState();
@@ -425,15 +425,14 @@ function initGestureOverlay() {
           updatePlayPauseIcons("playing");
         }
         showIcon(iconPlayPause);
-      }, 200);
+      }, 220);
     });
   } else {
     // === MODE DESKTOP ===
-    // Nonaktifkan klik kiri & kanan
     zoneLeft.style.pointerEvents = "none";
     zoneRight.style.pointerEvents = "none";
 
-    // Klik tengah 1x = play/pause
+    // Klik tengah = play/pause
     zoneCenter.addEventListener("click", () => {
       if (tapTimer) clearTimeout(tapTimer);
       tapTimer = setTimeout(() => {
@@ -449,7 +448,7 @@ function initGestureOverlay() {
       }, 200);
     });
 
-    // Double klik = fullscreen toggle
+    // Double click = fullscreen toggle
     overlay.addEventListener("dblclick", (e) => {
       e.preventDefault();
       toggleFullscreen();
