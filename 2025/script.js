@@ -23,7 +23,7 @@ function onYouTubeIframeAPIReady() {
       showinfo: 0,
       playsinline: 1,
       enablejsapi: 1, // wajib aktif untuk kontrol via JS
-      origin: "https://setlistjkt48.github.io",
+      origin: "https://setlistjkt48.github.io"
     },
     events: {
       onReady: onPlayerReady,
@@ -352,7 +352,7 @@ function initMobileControlBehavior() {
       container.classList.add("mobile-showing");
       setTimeout(() => {
         container.classList.remove("mobile-showing");
-      }, 3000); // tampil selama 3 detik
+      }, 2000); // tampil selama 3 detik
     }, 180);
   });
 }
@@ -413,20 +413,6 @@ function initGestureOverlay() {
         if (singleTapTimer) clearTimeout(singleTapTimer);
         return; // stop di sini (tidak trigger play/pause)
       }
-
-      // === Single tap di area mana pun → Play/Pause ===
-      if (singleTapTimer) clearTimeout(singleTapTimer);
-      singleTapTimer = setTimeout(() => {
-        const state = player.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          player.pauseVideo();
-          updatePlayPauseIcons("paused");
-        } else {
-          player.playVideo();
-          updatePlayPauseIcons("playing");
-        }
-        showIcon(iconPlayPause);
-      }, 250);
     });
   } else {
     // === MODE DESKTOP ===
@@ -607,3 +593,174 @@ function updatePlayPauseIcons(state) {
     if (gestureIcon) gestureIcon.textContent = "▶";
   }
 }
+
+/* =====================================================
+   === MODE HP: Overlay Play/Pause + Auto Hide ===
+===================================================== */
+function initMobileOverlayPlayPause() {
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (!isMobile) return;
+
+  const container = document.querySelector(".player-container");
+  const overlay = container.querySelector(".gesture-overlay");
+  const playPauseBtn = container.querySelector(".overlay-playpause-btn");
+
+  if (!container || !overlay || !playPauseBtn) return;
+
+  // SVG icons (YouTube style)
+  const playSVG = `
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 15 L52 32 L20 49 Z" fill="currentColor"/>
+    </svg>`;
+  const pauseSVG = `
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <rect x="18" y="14" width="8" height="36" rx="1" fill="currentColor"/>
+      <rect x="38" y="14" width="8" height="36" rx="1" fill="currentColor"/>
+    </svg>`;
+
+  let overlayVisible = false;
+  let hasStarted = false;
+  let autoHideTimer = null;
+
+  // === Helper untuk menampilkan overlay dengan auto-hide ===
+  function showOverlayAutoHide() {
+    playPauseBtn.classList.add("show");
+    overlayVisible = true;
+
+    if (autoHideTimer) clearTimeout(autoHideTimer);
+    autoHideTimer = setTimeout(() => {
+      // hanya auto-hide kalau video sedang PLAY
+      if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+        playPauseBtn.classList.remove("show");
+        overlayVisible = false;
+      }
+    }, 2000); // 2 detik auto hide
+  }
+
+  // === Klik di layar ===
+  overlay.addEventListener("click", (e) => {
+    // 1️⃣ Tap pertama → play video
+    if (!hasStarted) {
+      player.playVideo();
+      hasStarted = true;
+      playPauseBtn.classList.remove("show");
+      container.classList.add("mobile-playing");
+      container.classList.remove("mobile-paused");
+      playPauseBtn.innerHTML = pauseSVG;
+      return;
+    }
+
+    // 2️⃣ Setelah mulai → toggle overlay
+    if (overlayVisible) {
+      playPauseBtn.classList.remove("show");
+      overlayVisible = false;
+      if (autoHideTimer) clearTimeout(autoHideTimer);
+    } else {
+      showOverlayAutoHide();
+    }
+  });
+
+  // === Klik tombol overlay (Play/Pause) ===
+  playPauseBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const state = player.getPlayerState();
+    if (state === YT.PlayerState.PLAYING) {
+      player.pauseVideo();
+      updatePlayPauseIcons("paused");
+      playPauseBtn.innerHTML = playSVG;
+      playPauseBtn.classList.add("show"); // tampilkan tetap saat pause
+      if (autoHideTimer) clearTimeout(autoHideTimer);
+    } else {
+      player.playVideo();
+      updatePlayPauseIcons("playing");
+      playPauseBtn.innerHTML = pauseSVG;
+      showOverlayAutoHide(); // mulai auto-hide lagi
+    }
+  });
+
+  // === Pantau status player (sinkronisasi UI) ===
+  const checkState = () => {
+    if (!player || typeof player.getPlayerState !== "function") return;
+    const st = player.getPlayerState();
+
+    if (st === YT.PlayerState.PLAYING) {
+      hasStarted = true;
+      container.classList.add("mobile-playing");
+      container.classList.remove("mobile-paused");
+      playPauseBtn.innerHTML = pauseSVG;
+    } else if (st === YT.PlayerState.PAUSED) {
+      container.classList.remove("mobile-playing");
+      container.classList.add("mobile-paused");
+      playPauseBtn.innerHTML = playSVG;
+      playPauseBtn.classList.add("show"); // tetap terlihat ketika pause
+    }
+  };
+
+  setInterval(checkState, 500);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(initMobileOverlayPlayPause, 1000);
+});
+
+/* =====================================================
+   === AUTO HIDE Custom Controls & Progress Bar ===
+===================================================== */
+function initAutoHideControls() {
+  const container = document.querySelector(".player-container");
+  const controls = container.querySelector(".cust-controls");
+  const progressWrap = container.querySelector(".cust-progress-wrap");
+  if (!container || !controls || !progressWrap) return;
+
+  let hideTimer = null;
+  let isHidden = false;
+
+  function showControls() {
+    if (isHidden) {
+      controls.classList.add("show");
+      progressWrap.classList.add("show");
+      controls.classList.remove("hidden");
+      progressWrap.classList.remove("hidden");
+      isHidden = false;
+    }
+    if (hideTimer) clearTimeout(hideTimer);
+    // sembunyikan lagi setelah 2 detik jika video sedang play
+    hideTimer = setTimeout(() => {
+      const st = player.getPlayerState();
+      if (st === YT.PlayerState.PLAYING) hideControls();
+    }, 2000);
+  }
+
+  function hideControls() {
+    controls.classList.remove("show");
+    progressWrap.classList.remove("show");
+    controls.classList.add("hidden");
+    progressWrap.classList.add("hidden");
+    isHidden = true;
+  }
+
+  // tampilkan kembali saat interaksi
+  ["mousemove", "click", "touchstart"].forEach((evt) => {
+    document.addEventListener(evt, showControls);
+  });
+
+  // tetap tampil kalau video paused
+  const observer = setInterval(() => {
+    if (!player || typeof player.getPlayerState !== "function") return;
+    const st = player.getPlayerState();
+    if (st === YT.PlayerState.PAUSED) {
+      showControls();
+      if (hideTimer) clearTimeout(hideTimer);
+    }
+  }, 500);
+
+  // awalnya tampil
+  showControls();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    initMobileOverlayPlayPause(); // overlay play/pause
+    initAutoHideControls();       // auto-hide custom controls
+  }, 1000);
+});
