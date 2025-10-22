@@ -376,46 +376,47 @@ function initGestureOverlay() {
   const iconForward = overlay.querySelector(".gesture-icon.forward");
 
   const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  let tapTimer = null;
-  let lastTapLeft = 0;
-  let lastTapRight = 0;
+  let singleTapTimer = null;
+  let lastTapTimeLeft = 0;
+  let lastTapTimeRight = 0;
+  let doubleTapDetected = false;
 
   if (isMobile) {
     // === MODE HP ===
     overlay.addEventListener("click", (e) => {
       const now = Date.now();
       const zone = e.target.closest(".gesture-zone");
-      let isDoubleTap = false;
+      doubleTapDetected = false;
 
-      // --- DETEKSI DOUBLE TAP KANAN ---
-      if (zone === zoneRight && now - lastTapRight < 300) {
+      // === DOUBLE TAP KANAN ===
+      if (zone === zoneRight && now - lastTapTimeRight < 300) {
         e.preventDefault();
+        doubleTapDetected = true;
         const current = player.getCurrentTime();
         player.seekTo(current + 10, true);
         showIcon(iconForward);
-        isDoubleTap = true;
       }
-      lastTapRight = now;
+      lastTapTimeRight = now;
 
-      // --- DETEKSI DOUBLE TAP KIRI ---
-      if (zone === zoneLeft && now - lastTapLeft < 300) {
+      // === DOUBLE TAP KIRI ===
+      if (zone === zoneLeft && now - lastTapTimeLeft < 300) {
         e.preventDefault();
+        doubleTapDetected = true;
         const current = player.getCurrentTime();
         player.seekTo(Math.max(0, current - 10), true);
         showIcon(iconRewind);
-        isDoubleTap = true;
       }
-      lastTapLeft = now;
+      lastTapTimeLeft = now;
 
-      // --- Jika double tap terdeteksi, jangan lanjut play/pause ---
-      if (isDoubleTap) {
-        if (tapTimer) clearTimeout(tapTimer);
-        return;
+      // === Kalau double tap terdeteksi, batalkan single tap ===
+      if (doubleTapDetected) {
+        if (singleTapTimer) clearTimeout(singleTapTimer);
+        return; // stop di sini (tidak trigger play/pause)
       }
 
-      // --- 1x Tap di mana saja = Play / Pause ---
-      if (tapTimer) clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => {
+      // === Single tap di area mana pun → Play/Pause ===
+      if (singleTapTimer) clearTimeout(singleTapTimer);
+      singleTapTimer = setTimeout(() => {
         const state = player.getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
           player.pauseVideo();
@@ -425,7 +426,7 @@ function initGestureOverlay() {
           updatePlayPauseIcons("playing");
         }
         showIcon(iconPlayPause);
-      }, 220);
+      }, 250);
     });
   } else {
     // === MODE DESKTOP ===
@@ -434,8 +435,8 @@ function initGestureOverlay() {
 
     // Klik tengah = play/pause
     zoneCenter.addEventListener("click", () => {
-      if (tapTimer) clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => {
+      if (singleTapTimer) clearTimeout(singleTapTimer);
+      singleTapTimer = setTimeout(() => {
         const state = player.getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
           player.pauseVideo();
