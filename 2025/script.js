@@ -22,8 +22,7 @@ function onYouTubeIframeAPIReady() {
       iv_load_policy: 3,
       showinfo: 0,
       playsinline: 1,
-      enablejsapi: 1, // wajib aktif untuk kontrol via JS
-      origin: "https://setlistjkt48.github.io"
+      enablejsapi: 1, // wajib aktif untuk kontrol via Js
     },
     events: {
       onReady: onPlayerReady,
@@ -764,3 +763,4 @@ document.addEventListener("DOMContentLoaded", () => {
     initAutoHideControls();       // auto-hide custom controls
   }, 1000);
 });
+
