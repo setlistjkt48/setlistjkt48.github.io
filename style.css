@@ -139,8 +139,8 @@ button.btn-danger:hover {
 }
 
 /* Tombol replay show */
-.btn-info {
-  background: linear-gradient(90deg, #1535a0, #1535a0);
+.btn-replay {
+  background: linear-gradient(90deg, #204ee6, #2046c4);
   border: none;
   border-radius: 10px;
   margin-top: 40px;
@@ -149,12 +149,12 @@ button.btn-danger:hover {
   transition: 0.25s;
 }
 
-.btn-info:hover {
-  background: linear-gradient(90deg, #112e8b, #112e8b);
+.btn-replay:hover {
+  background: linear-gradient(90deg, #1d49d8, #1e42b9);
   transform: scale(1.02);
 }
 
-.btn-info.disabled {
+.btn-replay.disabled {
   opacity: 0.8;
   cursor: not-allowed;
 }
