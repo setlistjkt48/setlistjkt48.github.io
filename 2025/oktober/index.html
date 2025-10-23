@@ -215,61 +215,6 @@
 
     <!-- YouTube API -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script>
-      // === Konfigurasi URL Apps Script Web App ===
-      const APP_SCRIPT_URL =
-        "https://script.google.com/macros/s/AKfycbwqFm9c7mKO5Q-OIoryrdgbG6Uyi0B_YaTkr0ruwVUCdWwqDYb4uXxljSIfEXxb6yzZpA/exec";
-      // ⬆️ ganti dengan URL web app kamu
-
-      async function verifyEmail() {
-        // Cek cache email sebelumnya
-        let cachedEmail = localStorage.getItem("verifiedEmail");
-        if (cachedEmail) {
-          console.log("Email dari cache:", cachedEmail);
-          return true; // sudah pernah login
-        }
-
-        // Tampilkan prompt input email
-        const email = prompt("Masukkan email kamu untuk melanjutkan:");
-
-        if (!email) {
-          alert("Email wajib diisi.");
-          window.location.reload();
-          return false;
-        }
-
-        try {
-          // Kirim ke Apps Script untuk verifikasi
-          const response = await fetch(
-            `${APP_SCRIPT_URL}?email=${encodeURIComponent(email)}`
-          );
-          const data = await response.json();
-
-          if (data.valid === true) {
-            localStorage.setItem("verifiedEmail", email);
-            alert("Login berhasil!");
-            return true;
-          } else {
-            alert("Email tidak terdaftar. Akses ditolak.");
-            window.location.href = "https://setlistjkt48.github.io/";
-            return false;
-          }
-        } catch (err) {
-          console.error(err);
-          alert("Terjadi kesalahan koneksi ke server.");
-          return false;
-        }
-      }
-
-      // Jalankan verifikasi sebelum halaman tampil
-      document.addEventListener("DOMContentLoaded", async () => {
-        const ok = await verifyEmail();
-        if (!ok) {
-          document.body.innerHTML =
-            "<h2 style='color:white;text-align:center;margin-top:40vh;'>Akses ditolak</h2>";
-        }
-      });
-    </script>
     <script src="../script.js"></script>
     <script>
       // === Lineup Data ===
