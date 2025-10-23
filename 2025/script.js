@@ -717,7 +717,7 @@ footer {
 
   /* Saat video diputar: progress bar turun ke paling bawah */
   .player-container.mobile-playing .cust-progress-wrap {
-    bottom: -2px; /* menempel ke bawah */
+    bottom: 0px; /* menempel ke bawah */
     transition: bottom 0.3s ease;
   }
 
@@ -870,7 +870,7 @@ footer {
 }
 
 .player-container.mobile-playing .cust-progress-wrap {
-  bottom: 3px;
+  bottom: 0px;
 }
 
 /* Saat pause, tampilkan kembali */
