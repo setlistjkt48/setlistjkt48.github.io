@@ -81,7 +81,6 @@
                   class="progress-preview"
                   aria-hidden="true"
                 >
-                  <img id="progressPreviewImg" src="" alt="preview" />
                   <div id="progressPreviewTime" class="preview-time">0:00</div>
                 </div>
                 <input
@@ -273,7 +272,9 @@
         }
 
         // Tampilkan prompt input email
-        const email = prompt("Halaman untuk Membership. Masukkan email kamu untuk melanjutkan:");
+        const email = prompt(
+          "Halaman untuk Membership. Masukkan email kamu untuk melanjutkan:"
+        );
         if (!email) {
           alert("Email wajib diisi.");
           window.location.reload();
@@ -312,7 +313,6 @@
         }
       });
     </script>
-
     <script src="../script.js"></script>
     <script>
       // === Lineup Data ===
