@@ -237,18 +237,64 @@ function initCustomControls() {
   });
 
   // Seek / Preview
-  progressRange.addEventListener("input", () => {
-    const pct = Number(progressRange.value);
-    const newTime = (pct / 100) * player.getDuration();
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartValue = 0;
+
+  progressRange.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartValue = Number(progressRange.value);
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStartX;
+    const percentDelta = (dx / progressRange.offsetWidth) * 100;
+    let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
+    progressRange.value = newValue;
+
+    const newTime = (newValue / 100) * player.getDuration();
     previewTime.textContent = formatClock(newTime);
-    positionPreview(pct);
+    positionPreview(newValue);
     preview.style.display = "flex";
   });
-  progressRange.addEventListener("change", () => {
+
+  document.addEventListener("mouseup", () => {
+    if (!isDragging) return;
+    isDragging = false;
     const pct = Number(progressRange.value);
     player.seekTo((pct / 100) * player.getDuration(), true);
     preview.style.display = "none";
   });
+
+  progressRange.addEventListener("touchstart", (e) => {
+    isDragging = true;
+    dragStartX = e.touches[0].clientX;
+    dragStartValue = Number(progressRange.value);
+  });
+
+  document.addEventListener("touchmove", (e) => {
+    if (!isDragging) return;
+    const dx = e.touches[0].clientX - dragStartX;
+    const percentDelta = (dx / progressRange.offsetWidth) * 100;
+    let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
+    progressRange.value = newValue;
+
+    const newTime = (newValue / 100) * player.getDuration();
+    previewTime.textContent = formatClock(newTime);
+    positionPreview(newValue);
+    preview.style.display = "flex";
+  });
+
+  document.addEventListener("touchend", () => {
+    if (!isDragging) return;
+    isDragging = false;
+    const pct = Number(progressRange.value);
+    player.seekTo((pct / 100) * player.getDuration(), true);
+    preview.style.display = "none";
+  });
+
   progressRange.addEventListener(
     "mouseleave",
     () => (preview.style.display = "none")
