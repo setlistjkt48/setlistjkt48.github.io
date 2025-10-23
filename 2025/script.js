@@ -1,911 +1,884 @@
-let player;
-let currentIndex = 0;
-let expanded = false;
-let lastVolume = 100;
-let keyboardCooldown = false;
-const keyboardCooldownDelay = 100; // jeda 100ms antar-tekan
-
-// === YouTube Player Setup ===
-function onYouTubeIframeAPIReady() {
-  player = new YT.Player("player", {
-    height: "100%",
-    width: "100%",
-    videoId: "QhSfakzeDuI",
-    playerVars: {
-      autoplay: 0,
-      controls: 0, // gunakan kontrol custom kita
-      showinfo: 0,
-      rel: 0,
-      modestbranding: 1,
-      fs: 0,
-      disablekb: 0,
-      iv_load_policy: 3,
-      showinfo: 0,
-      playsinline: 1,
-      enablejsapi: 1, // wajib aktif untuk kontrol via JS
-    },
-    events: {
-      onReady: onPlayerReady,
-      onStateChange: onPlayerStateChange,
-    },
-  });
+:root {
+  --bg: #0f0f0f;
+  --text: #e5e5e5;
+  --muted: #a0a0a0;
+  --accent: #ec4899;
+  --hover: rgba(255, 255, 255, 0.08);
+  --maxwidth: 1440px;
+  --gap: 16px;
+  --radius: 12px;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+header {
+  position: sticky;
+  top: 0;
+  background: rgba(15, 15, 15, 0.9);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  z-index: 40;
+}
+.container {
+  max-width: var(--maxwidth);
+  margin: 0 auto;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo img {
+  height: 36px;
+  border-radius: 6px;
+}
+.brand-name {
+  font-weight: 500;
+  font-size: 19px;
+  color: #f0f0f0;
+  letter-spacing: 0.3px;
+}
+.search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 180px;
+}
+.search input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px 0 0 6px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font-size: 15px;
+}
+.search button {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 0;
+  border-radius: 0 6px 6px 0;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.icon-btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--hover);
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
-function onPlayerReady() {
-  initCustomControls();
-  loadLineup(0);
-  updateActiveItem(0);
+/* === Dropdown Show Theater === */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
 
-  // === Default line-up ===
-  // Jika di desktop (layar >= 900px) => tampil
-  // Jika di HP/tablet => tertutup
-  if (window.innerWidth >= 900) {
-    expanded = true;
-  } else {
-    expanded = false;
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #1a1a1a;
+  border-radius: 10px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  min-width: 180px;
+  padding: 8px 0;
+  display: none;
+  flex-direction: column;
+  z-index: 999;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.25s ease;
+}
+
+.dropdown-menu.show {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dropdown-menu a {
+  color: #eee;
+  text-decoration: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.dropdown-menu a:hover {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+/* Responsif HP */
+@media (max-width: 600px) {
+  .dropdown-menu {
+    position: left;
+    width: 80%;
+    max-width: 320px;
+    background: #181818;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    transform: translateY(-20px);
   }
-  updateVisibleMembers();
-}
-
-function onPlayerStateChange(event) {
-  if (event.data === YT.PlayerState.ENDED) playNextVideo();
-  if (event.data === YT.PlayerState.PLAYING) updatePlayPauseIcons("playing");
-  if (event.data === YT.PlayerState.PAUSED) updatePlayPauseIcons("paused");
-}
-
-/* =====================================================
-   === Ganti Video / Playlist ===
-===================================================== */
-function loadVideo(videoId, index = 0) {
-  currentIndex = index;
-  if (player && typeof player.loadVideoById === "function") {
-    player.loadVideoById(videoId);
-    loadLineup(index);
-    updateActiveItem(index);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  } else {
-    // jika player belum siap
-    const wait = setInterval(() => {
-      if (player && typeof player.loadVideoById === "function") {
-        clearInterval(wait);
-        player.loadVideoById(videoId);
-        loadLineup(index);
-        updateActiveItem(index);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    }, 500);
-  }
-}
-
-// === Ganti playlist YouTube ===
-function loadPlaylist(playlistId) {
-  if (player && typeof player.loadPlaylist === "function") {
-    player.loadPlaylist({ list: playlistId });
-  } else {
-    console.warn("Player belum siap");
-  }
-}
-
-/* =====================================================
-   === Auto Next Video ===
-===================================================== */
-function playNextVideo() {
-  const items = document.querySelectorAll(".playlist .item");
-  if (currentIndex < items.length - 1) {
-    currentIndex++;
-    const nextItem = items[currentIndex];
-    const nextVideoId = nextItem.getAttribute("data-video");
-    loadVideo(nextVideoId, currentIndex);
-  }
-}
-
-/* =====================================================
-   === Highlight Item Aktif di Playlist ===
-===================================================== */
-function updateActiveItem(index) {
-  const items = document.querySelectorAll(".playlist .item");
-  items.forEach((it, i) => {
-    it.classList.toggle("active", i === index);
-  });
-}
-
-/* =====================================================
-   === Line-up Grid ===
-===================================================== */
-const grid = document.getElementById("memberGrid");
-const btn = document.getElementById("toggleBtn");
-
-function loadLineup(index) {
-  if (!grid) return;
-  grid.innerHTML = "";
-  const members = videoLineup[index] || [];
-  members.forEach((name) => {
-    const card = document.createElement("div");
-    card.className = "member";
-    card.innerHTML = `
-      <img src="../../assets/img/${name.toLowerCase()}.jpg" alt="${name}">
-      <div class="member-name">${name}</div>
-    `;
-    grid.appendChild(card);
-  });
-  updateVisibleMembers();
-}
-
-function updateVisibleMembers() {
-  const cards = [...grid.children];
-  cards.forEach((c) => {
-    c.style.display = expanded ? "block" : "none";
-  });
-  btn.textContent = expanded ? "Tutup Line-up" : "Tampilkan Line-up";
-}
-
-btn?.addEventListener("click", () => {
-  expanded = !expanded;
-  updateVisibleMembers();
-});
-
-/* =====================================================
-   === Pencarian Playlist ===
-===================================================== */
-const searchInput = document.getElementById("searchInput");
-const searchBtn = document.getElementById("searchBtn");
-const playlist = document.getElementById("playlist");
-
-function filterPlaylist() {
-  const query = searchInput.value.toLowerCase().trim();
-  const items = playlist.querySelectorAll(".item");
-  items.forEach((item) => {
-    const text = item.innerText.toLowerCase();
-    item.style.display = !query || text.includes(query) ? "flex" : "none";
-  });
-}
-
-searchBtn?.addEventListener("click", filterPlaylist);
-searchInput?.addEventListener("keyup", (e) => {
-  if (e.key === "Enter") filterPlaylist();
-  if (searchInput.value.trim() === "") filterPlaylist();
-});
-searchInput?.addEventListener("search", filterPlaylist);
-
-/* =====================================================
-   === Dropdown Theater ===
-===================================================== */
-const showBtn = document.getElementById("showBtn");
-const dropdownMenu = document.getElementById("dropdownMenu");
-
-showBtn?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  dropdownMenu.classList.toggle("show");
-});
-document.addEventListener("click", (e) => {
-  if (!dropdownMenu.contains(e.target) && e.target !== showBtn) {
-    dropdownMenu.classList.remove("show");
-  }
-});
-window.addEventListener("resize", () => dropdownMenu.classList.remove("show"));
-
-/* =====================================================
-   === Format Waktu ===
-===================================================== */
-function formatClock(seconds) {
-  seconds = Math.max(0, Math.floor(seconds));
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const two = (n) => n.toString().padStart(2, "0");
-  return h > 0 ? `${h}:${two(m)}:${two(s)}` : `${m}:${two(s)}`;
-}
-
-/* =====================================================
-   === Custom Control Player ===
-===================================================== */
-function initCustomControls() {
-  const playBtn = document.getElementById("btnPlayPause");
-  const timeDisplay = document.getElementById("timeDisplay");
-  const progressRange = document.getElementById("progressRange");
-  const preview = document.getElementById("progressPreview");
-  const previewTime = document.getElementById("progressPreviewTime");
-  const volBtn = document.getElementById("btnVolume");
-  const volRange = document.getElementById("volumeRange");
-  const fsBtn = document.getElementById("btnFullscreen");
-
-  // Progress update loop
-  setInterval(() => {
-    if (!player || typeof player.getDuration !== "function") return;
-    const total = player.getDuration() || 0;
-    const current = player.getCurrentTime() || 0;
-    if (total > 0) {
-      const pct = (current / total) * 100;
-      progressRange.value = pct;
-      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${pct}%, rgba(200,200,200,0.15) ${pct}%)`;
-      timeDisplay.textContent = `${formatClock(current)} / ${formatClock(
-        total
-      )}`;
-    }
-  }, 250);
-
-  // Play / Pause
-  playBtn.addEventListener("click", () => {
-    const st = player.getPlayerState();
-    if (st === YT.PlayerState.PLAYING) {
-      player.pauseVideo();
-      updatePlayPauseIcons("paused");
-    } else {
-      player.playVideo();
-      updatePlayPauseIcons("playing");
-    }
-  });
-
-  // Seek / Preview - versi final
-  let isDragging = false;
-  let dragStartX = 0;
-  let dragStartValue = 0;
-
-  // 🧠 Matikan perilaku bawaan browser pada input range
-  ["mousedown", "touchstart"].forEach((evt) => {
-    progressRange.addEventListener(evt, (e) => e.preventDefault());
-  });
-
-  progressRange.addEventListener("mousedown", (e) => {
-    e.preventDefault(); // cegah default drag bawaan range
-    isDragging = true;
-    dragStartX = e.clientX;
-    dragStartValue = Number(progressRange.value);
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const dx = e.clientX - dragStartX;
-    const percentDelta = (dx / progressRange.offsetWidth) * 100;
-    let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
-    progressRange.value = newValue;
-
-    const newTime = (newValue / 100) * player.getDuration();
-    previewTime.textContent = formatClock(newTime);
-    positionPreview(newValue);
-    preview.style.display = "flex";
-  });
-
-  document.addEventListener("mouseup", (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    isDragging = false;
-    const pct = Number(progressRange.value);
-    player.seekTo((pct / 100) * player.getDuration(), true);
-    preview.style.display = "none";
-  });
-
-  // === Touch (HP) ===
-  progressRange.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    isDragging = true;
-    dragStartX = e.touches[0].clientX;
-    dragStartValue = Number(progressRange.value);
-  });
-
-  document.addEventListener("touchmove", (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const dx = e.touches[0].clientX - dragStartX;
-    const percentDelta = (dx / progressRange.offsetWidth) * 100;
-    let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
-    progressRange.value = newValue;
-
-    const newTime = (newValue / 100) * player.getDuration();
-    previewTime.textContent = formatClock(newTime);
-    positionPreview(newValue);
-    preview.style.display = "flex";
-  });
-
-  document.addEventListener("touchend", (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    isDragging = false;
-    const pct = Number(progressRange.value);
-    player.seekTo((pct / 100) * player.getDuration(), true);
-    preview.style.display = "none";
-  });
-
-  // tetap sembunyikan preview jika mouse keluar
-  progressRange.addEventListener("mouseleave", () => {
-    if (!isDragging) preview.style.display = "none";
-  });
-
-  function positionPreview(pct) {
-    const wrap = document.querySelector(".cust-progress-wrap");
-    const wrapRect = wrap.getBoundingClientRect();
-    const x = (Math.max(0, Math.min(100, pct)) / 100) * wrapRect.width;
-    preview.style.left = `${x}px`;
-  }
-
-  // Volume logic (fix restore volume)
-  volRange.addEventListener("input", () => {
-    const v = Number(volRange.value);
-    player.setVolume(v);
-    if (v === 0) {
-      player.mute();
-      volBtn.textContent = "🔈";
-    } else {
-      player.unMute();
-      volBtn.textContent = "🔊";
-      lastVolume = v;
-    }
-    volRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${v}%, rgba(200,200,200,0.15) ${v}%)`;
-  });
-
-  volBtn.addEventListener("click", () => {
-    if (player.isMuted && player.isMuted()) {
-      player.unMute();
-      volBtn.textContent = "🔊";
-      volRange.value = lastVolume;
-      player.setVolume(lastVolume);
-    } else {
-      player.mute();
-      volBtn.textContent = "🔈";
-      lastVolume = volRange.value;
-      volRange.value = 0;
-    }
-    const v = Number(volRange.value);
-    volRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${v}%, rgba(200,200,200,0.15) ${v}%)`;
-  });
-
-  // Fullscreen
-  fsBtn.addEventListener("click", () => {
-    const container = document.querySelector(".player-container");
-    if (!document.fullscreenElement) container.requestFullscreen();
-    else document.exitFullscreen();
-  });
-
-  // === Perluas area drag progress di mode HP (posisi adaptif) ===
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    const progressWrap = document.querySelector(".cust-progress-wrap");
-    if (progressWrap) {
-      // buat layer baru di BODY (tetap aktif)
-      const touchLayer = document.createElement("div");
-      touchLayer.style.position = "fixed";
-      touchLayer.style.left = "0";
-      touchLayer.style.width = "100%";
-      touchLayer.style.zIndex = 9999;
-      touchLayer.style.background = "transparent";
-      touchLayer.style.touchAction = "none";
-      touchLayer.style.pointerEvents = "auto";
-      document.body.appendChild(touchLayer);
-
-      // fungsi untuk memperbarui posisi touchLayer mengikuti progress bar
-      function updateTouchLayerPosition() {
-        const rect = progressWrap.getBoundingClientRect();
-        touchLayer.style.left = `${rect.left}px`;
-        touchLayer.style.width = `${rect.width}px`;
-        touchLayer.style.top = `${rect.top - 30}px`; // 30px ke atas
-        touchLayer.style.height = `${rect.height + 35}px`; // +30 atas, +5 bawah
-      }
-
-      // panggil pertama kali & setiap waktu tertentu
-      updateTouchLayerPosition();
-      const intervalId = setInterval(updateTouchLayerPosition, 250);
-
-      // juga update saat rotasi / resize
-      window.addEventListener("resize", updateTouchLayerPosition);
-      window.addEventListener("orientationchange", updateTouchLayerPosition);
-
-      // === blokir click default ke bawah ===
-      ["mousedown", "click", "touchstart"].forEach((ev) => {
-        touchLayer.addEventListener(ev, (e) => e.preventDefault(), true);
-      });
-
-      // === drag logika manual ===
-      let isTouchDragging = false;
-      let startX = 0;
-      let startValue = 0;
-
-      touchLayer.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        isTouchDragging = true;
-        startX = e.touches[0].clientX;
-        startValue = Number(progressRange.value);
-      });
-
-      touchLayer.addEventListener("touchmove", (e) => {
-        if (!isTouchDragging) return;
-        e.preventDefault();
-        const dx = e.touches[0].clientX - startX;
-        const percentDelta = (dx / progressRange.offsetWidth) * 100;
-        const newValue = Math.max(0, Math.min(100, startValue + percentDelta));
-        progressRange.value = newValue;
-
-        const newTime = (newValue / 100) * player.getDuration();
-        previewTime.textContent = formatClock(newTime);
-        positionPreview(newValue);
-        preview.style.display = "flex";
-      });
-
-      touchLayer.addEventListener("touchend", (e) => {
-        if (!isTouchDragging) return;
-        e.preventDefault();
-        isTouchDragging = false;
-        const pct = Number(progressRange.value);
-        player.seekTo((pct / 100) * player.getDuration(), true);
-        preview.style.display = "none";
-      });
-
-      // bersihkan interval kalau video player dihapus
-      window.addEventListener("beforeunload", () => clearInterval(intervalId));
-    }
+  .dropdown-menu a {
+    padding: 10px 18px;
+    font-size: 12px;
   }
 }
 
-/* =====================================================
-   === MODE HP: Auto-hide control + progress reposition ===
-===================================================== */
-function initMobileControlBehavior() {
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (!isMobile) return; // hanya aktif di HP
-
-  const container = document.querySelector(".player-container");
-  const controls = container.querySelector(".cust-controls");
-  const progress = container.querySelector(".cust-progress-wrap");
-  const overlay = container.querySelector(".gesture-overlay");
-
-  if (!container || !controls || !progress || !overlay) return;
-
-  // Ketika video mulai bermain → sembunyikan kontrol
-  const onPlay = () => {
-    container.classList.add("mobile-playing");
-  };
-
-  // Ketika video dijeda → tampilkan kontrol kembali
-  const onPause = () => {
-    container.classList.remove("mobile-playing");
-  };
-
-  // Hubungkan event player
-  const waitPlayer = setInterval(() => {
-    if (player && typeof player.addEventListener === "function") {
-      clearInterval(waitPlayer);
-      player.addEventListener("onStateChange", (event) => {
-        if (event.data === YT.PlayerState.PLAYING) onPlay();
-        if (event.data === YT.PlayerState.PAUSED) onPause();
-      });
-    }
-  }, 300);
-
-  // Tap layar = tampilkan sementara kontrol
-  let tapTimer = null;
-  overlay.addEventListener("click", () => {
-    if (tapTimer) clearTimeout(tapTimer);
-    tapTimer = setTimeout(() => {
-      container.classList.add("mobile-showing");
-      setTimeout(() => {
-        container.classList.remove("mobile-showing");
-      }, 3000); // tampil selama 3 detik
-    }, 180);
-  });
+main {
+  max-width: var(--maxwidth);
+  margin: 2px auto;
+  padding: 0 12px;
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(initMobileControlBehavior, 1500);
-});
-
-/* =====================================================
-   === Gesture Overlay - Play, Pause, Forward, Rewind ===
-===================================================== */
-function initGestureOverlay() {
-  const overlay = document.querySelector(".gesture-overlay");
-  if (!overlay) return;
-
-  const zoneLeft = overlay.querySelector(".gesture-zone.left");
-  const zoneCenter = overlay.querySelector(".gesture-zone.center");
-  const zoneRight = overlay.querySelector(".gesture-zone.right");
-  const iconRewind = overlay.querySelector(".gesture-icon.rewind");
-  const iconPlayPause = overlay.querySelector(".gesture-icon.playpause");
-  const iconForward = overlay.querySelector(".gesture-icon.forward");
-
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  let singleTapTimer = null;
-  let lastTapTimeLeft = 0;
-  let lastTapTimeRight = 0;
-  let doubleTapDetected = false;
-
-  if (isMobile) {
-    // === Geser atas/bawah untuk keluar fullscreen ===
-    let startY = 0;
-    let endY = 0;
-
-    overlay.addEventListener("touchstart", (e) => {
-      startY = e.touches[0].clientY;
-    });
-
-    overlay.addEventListener("touchend", (e) => {
-      endY = e.changedTouches[0].clientY;
-      const deltaY = endY - startY;
-
-      // Jika geser cukup jauh ke atas atau ke bawah (lebih dari 100px)
-      if (Math.abs(deltaY) > 100) {
-        if (document.fullscreenElement) {
-          document.exitFullscreen();
-        }
-      }
-    });
-    // === MODE HP ===
-    overlay.addEventListener("click", (e) => {
-      const now = Date.now();
-      const zone = e.target.closest(".gesture-zone");
-      doubleTapDetected = false;
-
-      // === DOUBLE TAP KANAN ===
-      if (zone === zoneRight && now - lastTapTimeRight < 300) {
-        e.preventDefault();
-        doubleTapDetected = true;
-        const current = player.getCurrentTime();
-        player.seekTo(current + 10, true);
-        showIcon(iconForward);
-      }
-      lastTapTimeRight = now;
-
-      // === DOUBLE TAP KIRI ===
-      if (zone === zoneLeft && now - lastTapTimeLeft < 300) {
-        e.preventDefault();
-        doubleTapDetected = true;
-        const current = player.getCurrentTime();
-        player.seekTo(Math.max(0, current - 10), true);
-        showIcon(iconRewind);
-      }
-      lastTapTimeLeft = now;
-
-      // === Kalau double tap terdeteksi, batalkan single tap ===
-      if (doubleTapDetected) {
-        if (singleTapTimer) clearTimeout(singleTapTimer);
-        return; // stop di sini (tidak trigger play/pause)
-      }
-    });
-  } else {
-    // === MODE DESKTOP ===
-    zoneLeft.style.pointerEvents = "none";
-    zoneRight.style.pointerEvents = "none";
-
-    // Klik tengah = play/pause
-    zoneCenter.addEventListener("click", () => {
-      if (singleTapTimer) clearTimeout(singleTapTimer);
-      singleTapTimer = setTimeout(() => {
-        const state = player.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          player.pauseVideo();
-          updatePlayPauseIcons("paused");
-        } else {
-          player.playVideo();
-          updatePlayPauseIcons("playing");
-        }
-        showIcon(iconPlayPause);
-      }, 200);
-    });
-
-    // Double click = fullscreen toggle
-    overlay.addEventListener("dblclick", (e) => {
-      e.preventDefault();
-      toggleFullscreen();
-    });
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: var(--gap);
+}
+.player-wrap {
+  background: #111;
+  padding: 12px;
+  border-radius: var(--radius);
+}
+.player-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.playlist {
+  background: #111;
+  padding: 12px;
+  border-radius: var(--radius);
+  max-height: 200vh;
+  overflow: auto;
+}
+.item {
+  display: flex;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  align-items: center;
+  transition: 0.2s;
+  color: var(--muted);
+}
+.item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f1f1;
+}
+.item.active {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.thumb {
+  width: 100%;
+  max-width: 120px;
+  aspect-ratio: 16/9;
+  flex-shrink: 0;
+  background: #222;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.it-title {
+  font-size: 12px;
+  font-weight: 400;
+  color: #e0e0e0;
+  line-height: 1.3em;
+}
+footer {
+  margin-top: 20px;
+  padding: 18px 12px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
   }
-
-  // === Helper tampilkan ikon gesture ===
-  function showIcon(icon) {
-    icon.classList.add("show");
-    setTimeout(() => icon.classList.remove("show"), 600);
+  .playlist {
+    max-height: none;
+    margin-top: 10px;
+  }
+}
+@media (max-width: 600px) {
+  .container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .logo {
+    justify-content: center;
+  }
+  .brand-name {
+    font-size: 17px;
+  }
+  .search {
+    order: 3;
+    width: 100%;
+  }
+  .buttons {
+    order: 2;
+    justify-content: center;
+  }
+  .icon-btn {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  .search input {
+    font-size: 14px;
+    padding: 8px;
+  }
+  .search button {
+    padding: 8px 10px;
   }
 }
 
-// Pastikan dijalankan setelah halaman siap
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(initGestureOverlay, 1000); // beri waktu player load
-});
-
-/* =====================================================
-   === Keyboard Controls (Space, Arrow, F) ===
-===================================================== */
-
-function initKeyboardControls() {
-  document.addEventListener("keydown", (e) => {
-    if (keyboardCooldown) return; // ⛔ abaikan jika masih cooldown
-
-    if (!player || typeof player.getPlayerState !== "function") return;
-    const tag = document.activeElement.tagName.toLowerCase();
-    if (tag === "input" || tag === "textarea") return;
-
-    // mulai cooldown
-    keyboardCooldown = true;
-    setTimeout(() => (keyboardCooldown = false), keyboardCooldownDelay);
-
-    switch (e.key.toLowerCase()) {
-      case " ":
-      case "spacebar":
-        e.preventDefault();
-        const state = player.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          player.pauseVideo();
-          showKeyboardIcon("❚❚");
-          updatePlayPauseIcons("paused");
-        } else {
-          player.playVideo();
-          showKeyboardIcon("▶");
-          updatePlayPauseIcons("playing");
-        }
-        break;
-
-      case "arrowright":
-        e.preventDefault();
-        player.seekTo(player.getCurrentTime() + 10, true);
-        showKeyboardIcon("⟳ +10s");
-        break;
-
-      case "arrowleft":
-        e.preventDefault();
-        player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
-        showKeyboardIcon("-10s ⟲");
-        break;
-
-      case "f":
-        e.preventDefault();
-        toggleFullscreen();
-        showKeyboardIcon("⛶");
-        break;
-    }
-  });
+/* === Lineup Section === */
+.member-box {
+  margin-top: 12px;
+  background: #111;
+  border-radius: 10px;
+  padding: 12px;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+  overflow: hidden;
 }
-
-/* ---------- Helper tampilkan animasi icon keyboard di posisi berbeda ---------- */
-function showKeyboardIcon(symbol) {
-  const wrapper = document.querySelector(".video-wrapper");
-  if (!wrapper) return;
-
-  // jika sudah ada indicator sebelumnya, hapus dulu biar bersih
-  let indicator = wrapper.querySelector("#keyboardIndicator");
-  if (indicator) indicator.remove();
-
-  // buat ulang elemen indicator
-  indicator = document.createElement("div");
-  indicator.id = "keyboardIndicator";
-  indicator.textContent = symbol;
-  wrapper.appendChild(indicator);
-
-  // posisi berdasarkan jenis simbol
-  if (symbol === "⟳ +10s") {
-    indicator.classList.add("right");
-  } else if (symbol === "-10s ⟲") {
-    indicator.classList.add("left");
-  } else {
-    indicator.classList.add("center");
+.member-title {
+  font-size: 17px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #f5f5f5;
+  text-align: center;
+}
+.member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  transition: opacity 0.3s ease;
+}
+.member {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 8px;
+  transition: transform 0.25s;
+}
+.member:hover {
+  transform: scale(1.03);
+}
+.member img {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.member-name {
+  font-size: 14px;
+  color: #e8e8e8;
+  font-weight: 400;
+}
+.show-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+.show-more button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.25s;
+  font-size: 14px;
+}
+.show-more button:hover {
+  background: #ff67b7;
+}
+@media (max-width: 800px) {
+  /* sebelumnya di sini jadi 2 kolom, kita ubah jadi 6 */
+  .member-grid {
+    grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+    gap: 8px;
+    transform: scale(1); /* perkecil seluruh grid */
+    transform-origin: top center;
   }
-
-  // animasi muncul
-  requestAnimationFrame(() => {
-    indicator.classList.add("show");
-  });
-
-  // hapus setelah 700ms
-  setTimeout(() => indicator.remove(), 700);
-}
-
-/* ---------- Toggle fullscreen universal ---------- */
-function toggleFullscreen() {
-  const container = document.querySelector(".player-container");
-  if (!container) return;
-
-  // Jika BELUM fullscreen
-  if (
-    !document.fullscreenElement &&
-    !document.webkitFullscreenElement &&
-    !document.mozFullScreenElement &&
-    !document.msFullscreenElement
-  ) {
-    if (container.requestFullscreen) {
-      container.requestFullscreen();
-    } else if (container.webkitRequestFullscreen) {
-      container.webkitRequestFullscreen(); // Safari
-    } else if (container.mozRequestFullScreen) {
-      container.mozRequestFullScreen(); // Firefox lama
-    } else if (container.msRequestFullscreen) {
-      container.msRequestFullscreen(); // IE/Edge lama
-    }
-  } else {
-    // Jika SUDAH fullscreen → keluar
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
-    }
+  .member img {
+    border-radius: 5px;
+  }
+  .member-name {
+    font-size: 11px;
   }
 }
 
-// Jalankan setelah halaman siap
-document.addEventListener("DOMContentLoaded", initKeyboardControls);
-
-/* =====================================================
-   === Sinkronisasi Semua Icon Play/Pause ===
-===================================================== */
-function updatePlayPauseIcons(state) {
-  const playBtn = document.getElementById("btnPlayPause");
-  const gestureIcon = document.querySelector(".gesture-icon.playpause");
-
-  if (state === "playing") {
-    if (playBtn) playBtn.textContent = "❚❚";
-    if (gestureIcon) gestureIcon.textContent = "❚❚";
-  } else if (state === "paused") {
-    if (playBtn) playBtn.textContent = "▶";
-    if (gestureIcon) gestureIcon.textContent = "▶";
+/* tambahan untuk layar lebih kecil, misal HP di bawah 500px */
+@media (max-width: 500px) {
+  .member-grid {
+    grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+    transform: scale(1);
+    gap: 6px;
+  }
+  .member-name {
+    font-size: 10px;
   }
 }
 
-/* =====================================================
-   === MODE HP: Overlay Play/Pause + Auto Hide ===
-===================================================== */
-function initMobileOverlayPlayPause() {
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (!isMobile) return;
-
-  const container = document.querySelector(".player-container");
-  const overlay = container.querySelector(".gesture-overlay");
-  const playPauseBtn = container.querySelector(".overlay-playpause-btn");
-
-  if (!container || !overlay || !playPauseBtn) return;
-
-  // SVG icons (YouTube style)
-  const playSVG = `
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 15 L52 32 L20 49 Z" fill="currentColor"/>
-    </svg>`;
-  const pauseSVG = `
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <rect x="18" y="14" width="8" height="36" rx="1" fill="currentColor"/>
-      <rect x="38" y="14" width="8" height="36" rx="1" fill="currentColor"/>
-    </svg>`;
-
-  let overlayVisible = false;
-  let hasStarted = false;
-  let autoHideTimer = null;
-
-  // === Helper untuk menampilkan overlay dengan auto-hide ===
-  function showOverlayAutoHide() {
-    playPauseBtn.classList.add("show");
-    overlayVisible = true;
-
-    if (autoHideTimer) clearTimeout(autoHideTimer);
-    autoHideTimer = setTimeout(() => {
-      // hanya auto-hide kalau video sedang PLAY
-      if (player.getPlayerState() === YT.PlayerState.PLAYING) {
-        playPauseBtn.classList.remove("show");
-        overlayVisible = false;
-      }
-    }, 2000); // 2 detik auto hide
-  }
-
-  // === Klik di layar ===
-  overlay.addEventListener("click", (e) => {
-    // 1️⃣ Tap pertama → play video
-    if (!hasStarted) {
-      player.playVideo();
-      hasStarted = true;
-      playPauseBtn.classList.remove("show");
-      container.classList.add("mobile-playing");
-      container.classList.remove("mobile-paused");
-      playPauseBtn.innerHTML = pauseSVG;
-      return;
-    }
-
-    // 2️⃣ Setelah mulai → toggle overlay
-    if (overlayVisible) {
-      playPauseBtn.classList.remove("show");
-      overlayVisible = false;
-      if (autoHideTimer) clearTimeout(autoHideTimer);
-    } else {
-      showOverlayAutoHide();
-    }
-  });
-
-  // === Klik tombol overlay (Play/Pause) ===
-  playPauseBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const state = player.getPlayerState();
-    if (state === YT.PlayerState.PLAYING) {
-      player.pauseVideo();
-      updatePlayPauseIcons("paused");
-      playPauseBtn.innerHTML = playSVG;
-      playPauseBtn.classList.add("show"); // tampilkan tetap saat pause
-      if (autoHideTimer) clearTimeout(autoHideTimer);
-    } else {
-      player.playVideo();
-      updatePlayPauseIcons("playing");
-      playPauseBtn.innerHTML = pauseSVG;
-      showOverlayAutoHide(); // mulai auto-hide lagi
-    }
-  });
-
-  // === Pantau status player (sinkronisasi UI) ===
-  const checkState = () => {
-    if (!player || typeof player.getPlayerState !== "function") return;
-    const st = player.getPlayerState();
-
-    if (st === YT.PlayerState.PLAYING) {
-      hasStarted = true;
-      container.classList.add("mobile-playing");
-      container.classList.remove("mobile-paused");
-      playPauseBtn.innerHTML = pauseSVG;
-    } else if (st === YT.PlayerState.PAUSED) {
-      container.classList.remove("mobile-playing");
-      container.classList.add("mobile-paused");
-      playPauseBtn.innerHTML = playSVG;
-      playPauseBtn.classList.add("show"); // tetap terlihat ketika pause
-    }
-  };
-
-  setInterval(checkState, 500);
+/* Untuk ikon font-style */
+.player-btn svg {
+  width: 28px;
+  height: 28px;
+  fill: #fff;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(initMobileOverlayPlayPause, 1000);
-});
-
-/* =====================================================
-   === AUTO HIDE Custom Controls & Progress Bar ===
-===================================================== */
-function initAutoHideControls() {
-  const container = document.querySelector(".player-container");
-  const controls = container.querySelector(".cust-controls");
-  const progressWrap = container.querySelector(".cust-progress-wrap");
-  if (!container || !controls || !progressWrap) return;
-
-  let hideTimer = null;
-  let isHidden = false;
-
-  function showControls() {
-    if (isHidden) {
-      controls.classList.add("show");
-      progressWrap.classList.add("show");
-      controls.classList.remove("hidden");
-      progressWrap.classList.remove("hidden");
-      isHidden = false;
-    }
-    if (hideTimer) clearTimeout(hideTimer);
-    // sembunyikan lagi setelah 2 detik jika video sedang play
-    hideTimer = setTimeout(() => {
-      const st = player.getPlayerState();
-      if (st === YT.PlayerState.PLAYING) hideControls();
-    }, 3000);
-  }
-
-  function hideControls() {
-    controls.classList.remove("show");
-    progressWrap.classList.remove("show");
-    controls.classList.add("hidden");
-    progressWrap.classList.add("hidden");
-    isHidden = true;
-  }
-
-  // tampilkan kembali saat interaksi
-  ["mousemove", "click", "touchstart"].forEach((evt) => {
-    document.addEventListener(evt, showControls);
-  });
-
-  // tetap tampil kalau video paused
-  const observer = setInterval(() => {
-    if (!player || typeof player.getPlayerState !== "function") return;
-    const st = player.getPlayerState();
-    if (st === YT.PlayerState.PAUSED) {
-      showControls();
-      if (hideTimer) clearTimeout(hideTimer);
-    }
-  }, 500);
-
-  // awalnya tampil
-  showControls();
+/* --------- custom player controls --------- */
+.cust-progress-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px; /* tepat di atas control bar */
+  height: 28px;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+  z-index: 30;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(() => {
-    initMobileOverlayPlayPause(); // overlay play/pause
-    initAutoHideControls(); // auto-hide custom controls
-  }, 1000);
-});
+.progress-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(236, 72, 153, 0.9) 0%,
+    rgba(200, 200, 200, 0.15) 0%
+  ); /* we'll update via JS */
+  outline: none;
+  margin: 0;
+}
+
+/* thumb / dot */
+.progress-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.15);
+  background: rgba(236, 72, 153, 0.95);
+  cursor: pointer;
+}
+.progress-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(236, 72, 153, 0.95);
+  border: none;
+  cursor: pointer;
+}
+
+/* preview bubble above thumb */
+.progress-preview {
+  position: absolute;
+  bottom: 26px; /* above the range */
+  left: 0;
+  transform: translateX(-50%);
+  display: none;
+  pointer-events: none;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 13px;
+  z-index: 35;
+}
+.preview-time {
+  font-size: 12px;
+  color: #fff;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
+
+/* bottom control bar */
+.cust-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px; /* hapus padding sisi kiri/kanan jika mau rapat total */
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
+  border-radius: 0; /* biar rata ke tepi */
+  z-index: 31;
+}
+
+/* left side */
+.left-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.ctrl-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.12s, transform 0.12s;
+}
+.ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+}
+
+/* time display */
+.time-display {
+  color: #eee;
+  font-size: 13px;
+  min-width: 120px;
+  text-align: left;
+}
+
+/* right side */
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.volume-range {
+  width: 80px;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(
+    90deg,
+    rgba(236, 72, 153, 0.9) 100%,
+    rgba(200, 200, 200, 0.2) 0%
+  );
+  border-radius: 8px;
+  outline: none;
+}
+.volume-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 6px rgba(236, 72, 153, 0.12);
+  cursor: pointer;
+}
+.volume-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* responsive: small screens -> stack left controls and shrink sliders */
+@media (max-width: 720px) {
+  .volume-range {
+    width: 60px;
+  }
+  .time-display {
+    min-width: 90px;
+    font-size: 12px;
+  }
+  .cust-controls {
+    padding: 5px 14px;
+  }
+  .cust-progress-wrap {
+    bottom: 40px; /* ⬅️ turunkan posisinya */
+    height: 20px !important;
+  } /* adjust for mobile */
+}
+
+/* === Auto-hide untuk custom control & progress bar === */
+.cust-controls,
+.cust-progress-wrap {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.cust-controls.hidden,
+.cust-progress-wrap.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* opsional: saat show biar sedikit efek smooth muncul */
+.cust-controls.show,
+.cust-progress-wrap.show {
+  opacity: 1;
+}
+
+/* === Overlay Transparan untuk Blokir Klik YouTube Layer === */
+.click-blocker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  background: transparent;
+  pointer-events: none; /* biarkan gesture di atasnya menangkap klik */
+}
+
+/* kontrol kustom di atas overlay */
+.cust-progress-wrap,
+.cust-controls {
+  position: absolute;
+  z-index: 10; /* lebih tinggi dari overlay */
+}
+
+/* === Gesture Overlay (Play / Pause / Seek) === */
+.gesture-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  z-index: 3;
+  pointer-events: all; /* overlay bisa diklik */
+}
+
+.gesture-zone {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.gesture-icon {
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  text-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+}
+
+.gesture-icon.show {
+  opacity: 1;
+}
+
+.cust-progress-wrap,
+.cust-controls {
+  position: absolute;
+  z-index: 10;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .gesture-icon {
+    font-size: 16px;
+  }
+}
+
+.player-container,
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* player iframe agar tidak tangkap klik */
+#player iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none; /* ⬅️ kunci! */
+}
+
+/* === Keyboard Icon Overlay (di atas video-wrapper) === */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* === Keyboard Indicator: Posisi selaras dengan Gesture Icon === */
+.video-wrapper #keyboardIndicator.center {
+  font-size: 48px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.video-wrapper #keyboardIndicator.left {
+  font-size: 24px;
+  position: absolute;
+  top: 50%;
+  left: 8%;
+  transform: translate(-50%, -50%);
+}
+
+.video-wrapper #keyboardIndicator.right {
+  font-size: 24px;
+  position: absolute;
+  top: 50%;
+  right: 8%;
+  transform: translate(50%, -50%);
+}
+
+/* Ukuran menyesuaikan layar agar proporsional */
+@media (max-width: 768px) {
+  .video-wrapper #keyboardIndicator.center {
+    font-size: 24px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .video-wrapper #keyboardIndicator.left {
+    position: absolute;
+    top: 50%;
+    left: 15%;
+    transform: translate(-50%, -50%);
+  }
+
+  .video-wrapper #keyboardIndicator.right {
+    position: absolute;
+    top: 50%;
+    right: 15%;
+    transform: translate(50%, -50%);
+  }
+}
+
+/* === MODE HP: Auto-hide Custom Controls === */
+@media (max-width: 900px) {
+  /* Saat video diputar: sembunyikan control bar */
+  .player-container.mobile-playing .cust-controls {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(30px); /* animasi turun halus */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  /* Saat video diputar: progress bar turun ke paling bawah */
+  .player-container.mobile-playing .cust-progress-wrap {
+    bottom: -2px; /* menempel ke bawah */
+    transition: bottom 0.3s ease;
+  }
+
+  /* Saat video pause atau user tap: tampil kembali */
+  .player-container.mobile-playing.mobile-showing .cust-controls {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+
+  .player-container.mobile-playing.mobile-showing .cust-progress-wrap {
+    bottom: 40px; /* kembali ke posisi normal */
+  }
+}
+
+/* === MODE HP: Video Full Width (Kanan & Kiri Menempel) === */
+@media (max-width: 900px) {
+  /* Buat player section melebar penuh */
+  .player-wrap {
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: #000; /* hilangkan background luar */
+  }
+
+  /* Pastikan player-container melebar penuh layar */
+  .player-container {
+    width: 100vw !important; /* penuh viewport */
+    margin-left: calc(-1 * (50vw - 50%)); /* trik agar menempel sisi kiri */
+    border-radius: 0 !important;
+    background: #000;
+  }
+
+  /* Hilangkan padding horizontal main container */
+  main,
+  .grid {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100vw !important;
+  }
+
+  /* Pastikan playlist tetap rapi di bawah video */
+  .playlist {
+    padding: 12px;
+    border-radius: 0;
+    margin-top: 0;
+  }
+
+  /* Progress bar & control tetap di atas video */
+  .cust-progress-wrap,
+  .cust-controls {
+    border-radius: 0;
+  }
+}
+
+/* === Bersihkan semua overlay YouTube bawaan === */
+#player iframe {
+  pointer-events: none !important; /* mencegah klik langsung */
+}
+
+/* Hilangkan overlay bawaan (title, share, logo, dsb) */
+.ytp-chrome-top,
+.ytp-show-cards-title,
+.ytp-title,
+.ytp-gradient-top,
+.ytp-chrome-bottom,
+.ytp-pause-overlay,
+.ytp-tooltip,
+.ytp-share-button,
+.ytp-watch-later-button,
+.ytp-youtube-button {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Hilangkan watermark YouTube */
+.ytp-watermark {
+  display: none !important;
+}
+
+/* Pastikan video full area */
+#player,
+#player iframe {
+  width: 100% !important;
+  height: 100% !important;
+  background: #000 !important;
+}
+
+/* === Overlay tombol Play/Pause (dengan background bulat) === */
+@media (max-width: 900px) {
+  .overlay-playpause-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.4); /* semi transparan hitam seperti YouTube */
+    backdrop-filter: blur(1px); /* efek lembut seperti YouTube Mobile */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 80px;
+    line-height: 1;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+    z-index: 15;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .overlay-playpause-btn.show {
+    opacity: 1;
+    pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  /* SVG icon di dalam tombol */
+  .overlay-playpause-btn svg {
+    width: 40px;
+    height: 40px;
+    fill: #fff;
+  }
+
+  /* Efek animasi halus saat muncul */
+  @keyframes overlayFadeIn {
+    0% {
+      transform: translate(-50%, -50%) scale(0.8);
+      opacity: 0;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .overlay-playpause-btn.show {
+    animation: overlayFadeIn 0.25s ease-out;
+  }
+}
+
+/* Saat video berjalan, control disembunyikan */
+.player-container.mobile-playing .cust-controls {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.player-container.mobile-playing .cust-progress-wrap {
+  bottom: 3px;
+}
+
+/* Saat pause, tampilkan kembali */
+.player-container.mobile-paused .cust-controls {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.player-container.mobile-paused .cust-progress-wrap {
+  bottom: 40px;
+}
