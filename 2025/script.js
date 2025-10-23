@@ -210,13 +210,6 @@ function initCustomControls() {
   const volRange = document.getElementById("volumeRange");
   const fsBtn = document.getElementById("btnFullscreen");
 
-  // Thumbnail preview
-  function setPreviewThumbnail() {
-    const vid = player.getVideoData().video_id;
-    if (vid) previewImg.src = `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
-  }
-  setPreviewThumbnail();
-
   // Progress update loop
   setInterval(() => {
     if (!player || typeof player.getDuration !== "function") return;
@@ -763,5 +756,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initAutoHideControls();       // auto-hide custom controls
   }, 1000);
 });
+
 
 
