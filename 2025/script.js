@@ -685,22 +685,38 @@ function showKeyboardIcon(symbol) {
   setTimeout(() => indicator.remove(), 700);
 }
 
-/* ---------- Toggle fullscreen universal ---------- */
+/* ---------- Toggle fullscreen universal (fix iPhone Safari) ---------- */
 function toggleFullscreen() {
   const container = document.querySelector(".player-container");
+  const video = container?.querySelector("video");
+
   if (!container) return;
 
+  // Deteksi Safari iPhone
+  const isiPhone =
+    /iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+    !window.MSStream &&
+    typeof video?.webkitEnterFullscreen === "function";
+
   // Jika BELUM fullscreen
-  if (
+  const notFullscreen =
     !document.fullscreenElement &&
     !document.webkitFullscreenElement &&
     !document.mozFullScreenElement &&
-    !document.msFullscreenElement
-  ) {
-    if (container.requestFullscreen) {
+    !document.msFullscreenElement;
+
+  if (notFullscreen) {
+    // ⚠️ Safari iPhone pakai fullscreen bawaan video
+    if (isiPhone) {
+      try {
+        video.webkitEnterFullscreen();
+      } catch (err) {
+        console.warn("Safari fullscreen gagal:", err);
+      }
+    } else if (container.requestFullscreen) {
       container.requestFullscreen();
     } else if (container.webkitRequestFullscreen) {
-      container.webkitRequestFullscreen(); // Safari
+      container.webkitRequestFullscreen(); // Safari desktop
     } else if (container.mozRequestFullScreen) {
       container.mozRequestFullScreen(); // Firefox lama
     } else if (container.msRequestFullscreen) {
