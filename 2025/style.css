@@ -432,10 +432,10 @@ footer {
   align-items: center;
   gap: 8px;
   background: rgba(0, 0, 0, 0.8);
-  padding: 6px;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   z-index: 35;
 }
 .preview-time {
