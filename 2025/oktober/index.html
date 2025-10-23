@@ -228,19 +228,52 @@
       // === Konfigurasi URL Apps Script Web App ===
       const APP_SCRIPT_URL =
         "https://script.google.com/macros/s/AKfycbyaC-dRyS85-2iSBSQT_WR33TysVkmm6lmkhfRD3S8s1aDQwVOo6NTL3vT6s19rZMJ6nA/exec";
-      // ⬆️ ganti dengan URL web app kamu
 
+      // === Lama cache email (dalam milidetik) ===
+      const CACHE_DURATION = 3 * 24 * 60 * 60 * 1000; // 3 hari
+
+      // Simpan email + timestamp ke localStorage
+      function saveEmailCache(email) {
+        const data = {
+          email: email,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem("verifiedEmail", JSON.stringify(data));
+      }
+
+      // Ambil email dari cache (jika masih berlaku)
+      function loadEmailCache() {
+        const raw = localStorage.getItem("verifiedEmail");
+        if (!raw) return null;
+
+        try {
+          const data = JSON.parse(raw);
+          const now = Date.now();
+
+          if (now - data.timestamp > CACHE_DURATION) {
+            // sudah lebih dari 3 hari
+            localStorage.removeItem("verifiedEmail");
+            return null;
+          }
+
+          return data.email;
+        } catch {
+          localStorage.removeItem("verifiedEmail");
+          return null;
+        }
+      }
+
+      // === Fungsi verifikasi email ===
       async function verifyEmail() {
         // Cek cache email sebelumnya
-        let cachedEmail = localStorage.getItem("verifiedEmail");
+        let cachedEmail = loadEmailCache();
         if (cachedEmail) {
           console.log("Email dari cache:", cachedEmail);
           return true; // sudah pernah login
         }
 
         // Tampilkan prompt input email
-        const email = prompt("Masukkan email kamu untuk melanjutkan:");
-
+        const email = prompt("Halaman untuk Membership. Masukkan email kamu untuk melanjutkan:");
         if (!email) {
           alert("Email wajib diisi.");
           window.location.reload();
@@ -255,7 +288,7 @@
           const data = await response.json();
 
           if (data.valid === true) {
-            localStorage.setItem("verifiedEmail", email);
+            saveEmailCache(email);
             alert("Login berhasil!");
             return true;
           } else {
