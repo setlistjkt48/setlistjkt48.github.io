@@ -22,7 +22,7 @@ function onYouTubeIframeAPIReady() {
       iv_load_policy: 3,
       showinfo: 0,
       playsinline: 1,
-      enablejsapi: 1, // wajib aktif untuk kontrol via Js
+      enablejsapi: 1, // wajib aktif untuk kontrol via JS
     },
     events: {
       onReady: onPlayerReady,
@@ -373,6 +373,25 @@ function initGestureOverlay() {
   let doubleTapDetected = false;
 
   if (isMobile) {
+    // === Geser atas/bawah untuk keluar fullscreen ===
+    let startY = 0;
+    let endY = 0;
+
+    overlay.addEventListener("touchstart", (e) => {
+      startY = e.touches[0].clientY;
+    });
+
+    overlay.addEventListener("touchend", (e) => {
+      endY = e.changedTouches[0].clientY;
+      const deltaY = endY - startY;
+
+      // Jika geser cukup jauh ke atas atau ke bawah (lebih dari 100px)
+      if (Math.abs(deltaY) > 100) {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        }
+      }
+    });
     // === MODE HP ===
     overlay.addEventListener("click", (e) => {
       const now = Date.now();
@@ -752,11 +771,6 @@ function initAutoHideControls() {
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     initMobileOverlayPlayPause(); // overlay play/pause
-    initAutoHideControls();       // auto-hide custom controls
+    initAutoHideControls(); // auto-hide custom controls
   }, 1000);
 });
-
-
-
-
-
