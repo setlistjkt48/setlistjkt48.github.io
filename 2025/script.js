@@ -204,7 +204,6 @@ function initCustomControls() {
   const timeDisplay = document.getElementById("timeDisplay");
   const progressRange = document.getElementById("progressRange");
   const preview = document.getElementById("progressPreview");
-  const previewImg = document.getElementById("progressPreviewImg");
   const previewTime = document.getElementById("progressPreviewTime");
   const volBtn = document.getElementById("btnVolume");
   const volRange = document.getElementById("volumeRange");
@@ -756,6 +755,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initAutoHideControls();       // auto-hide custom controls
   }, 1000);
 });
+
 
 
 
