@@ -351,7 +351,7 @@ function initMobileControlBehavior() {
       container.classList.add("mobile-showing");
       setTimeout(() => {
         container.classList.remove("mobile-showing");
-      }, 2000); // tampil selama 3 detik
+      }, 3000); // tampil selama 3 detik
     }, 180);
   });
 }
@@ -763,4 +763,5 @@ document.addEventListener("DOMContentLoaded", () => {
     initAutoHideControls();       // auto-hide custom controls
   }, 1000);
 });
+
 
