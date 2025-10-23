@@ -438,14 +438,6 @@ footer {
   font-size: 12px;
   z-index: 35;
 }
-.progress-preview img {
-  width: 120px;
-  height: 68px;
-  object-fit: cover;
-  border-radius: 4px;
-  flex-shrink: 0;
-  background: #111;
-}
 .preview-time {
   font-size: 12px;
   color: #fff;
@@ -546,17 +538,12 @@ footer {
     min-width: 90px;
     font-size: 12px;
   }
-  .progress-preview img {
-    width: 96px;
-    height: 54px;
-  }
-
   .cust-controls {
-    padding: 0px 14px;
+    padding: 5px 14px;
   }
   .cust-progress-wrap {
     bottom: 40px; /* ⬅️ turunkan posisinya */
-    height: 0px !important;
+    height: 10px !important;
   } /* adjust for mobile */
 }
 
@@ -730,7 +717,7 @@ footer {
 
   /* Saat video diputar: progress bar turun ke paling bawah */
   .player-container.mobile-playing .cust-progress-wrap {
-    bottom: 3px; /* menempel ke bawah */
+    bottom: 0px; /* menempel ke bawah */
     transition: bottom 0.3s ease;
   }
 
