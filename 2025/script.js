@@ -720,7 +720,7 @@ function initAutoHideControls() {
     hideTimer = setTimeout(() => {
       const st = player.getPlayerState();
       if (st === YT.PlayerState.PLAYING) hideControls();
-    }, 2000);
+    }, 3000);
   }
 
   function hideControls() {
@@ -756,6 +756,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initAutoHideControls();       // auto-hide custom controls
   }, 1000);
 });
+
 
 
 
