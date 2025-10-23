@@ -236,12 +236,18 @@ function initCustomControls() {
     }
   });
 
-  // Seek / Preview
+  // Seek / Preview - versi final
   let isDragging = false;
   let dragStartX = 0;
   let dragStartValue = 0;
 
+  // 🧠 Matikan perilaku bawaan browser pada input range
+  ["mousedown", "touchstart"].forEach((evt) => {
+    progressRange.addEventListener(evt, (e) => e.preventDefault());
+  });
+
   progressRange.addEventListener("mousedown", (e) => {
+    e.preventDefault(); // cegah default drag bawaan range
     isDragging = true;
     dragStartX = e.clientX;
     dragStartValue = Number(progressRange.value);
@@ -249,6 +255,7 @@ function initCustomControls() {
 
   document.addEventListener("mousemove", (e) => {
     if (!isDragging) return;
+    e.preventDefault();
     const dx = e.clientX - dragStartX;
     const percentDelta = (dx / progressRange.offsetWidth) * 100;
     let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
@@ -260,15 +267,18 @@ function initCustomControls() {
     preview.style.display = "flex";
   });
 
-  document.addEventListener("mouseup", () => {
+  document.addEventListener("mouseup", (e) => {
     if (!isDragging) return;
+    e.preventDefault();
     isDragging = false;
     const pct = Number(progressRange.value);
     player.seekTo((pct / 100) * player.getDuration(), true);
     preview.style.display = "none";
   });
 
+  // === Touch (HP) ===
   progressRange.addEventListener("touchstart", (e) => {
+    e.preventDefault();
     isDragging = true;
     dragStartX = e.touches[0].clientX;
     dragStartValue = Number(progressRange.value);
@@ -276,6 +286,7 @@ function initCustomControls() {
 
   document.addEventListener("touchmove", (e) => {
     if (!isDragging) return;
+    e.preventDefault();
     const dx = e.touches[0].clientX - dragStartX;
     const percentDelta = (dx / progressRange.offsetWidth) * 100;
     let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
@@ -287,18 +298,19 @@ function initCustomControls() {
     preview.style.display = "flex";
   });
 
-  document.addEventListener("touchend", () => {
+  document.addEventListener("touchend", (e) => {
     if (!isDragging) return;
+    e.preventDefault();
     isDragging = false;
     const pct = Number(progressRange.value);
     player.seekTo((pct / 100) * player.getDuration(), true);
     preview.style.display = "none";
   });
 
-  progressRange.addEventListener(
-    "mouseleave",
-    () => (preview.style.display = "none")
-  );
+  // tetap sembunyikan preview jika mouse keluar
+  progressRange.addEventListener("mouseleave", () => {
+    if (!isDragging) preview.style.display = "none";
+  });
 
   function positionPreview(pct) {
     const wrap = document.querySelector(".cust-progress-wrap");
@@ -344,6 +356,83 @@ function initCustomControls() {
     if (!document.fullscreenElement) container.requestFullscreen();
     else document.exitFullscreen();
   });
+
+  // === Perluas area drag progress di mode HP (posisi adaptif) ===
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    const progressWrap = document.querySelector(".cust-progress-wrap");
+    if (progressWrap) {
+      // buat layer baru di BODY (tetap aktif)
+      const touchLayer = document.createElement("div");
+      touchLayer.style.position = "fixed";
+      touchLayer.style.left = "0";
+      touchLayer.style.width = "100%";
+      touchLayer.style.zIndex = 9999;
+      touchLayer.style.background = "transparent";
+      touchLayer.style.touchAction = "none";
+      touchLayer.style.pointerEvents = "auto";
+      document.body.appendChild(touchLayer);
+
+      // fungsi untuk memperbarui posisi touchLayer mengikuti progress bar
+      function updateTouchLayerPosition() {
+        const rect = progressWrap.getBoundingClientRect();
+        touchLayer.style.left = `${rect.left}px`;
+        touchLayer.style.width = `${rect.width}px`;
+        touchLayer.style.top = `${rect.top - 30}px`; // 30px ke atas
+        touchLayer.style.height = `${rect.height + 35}px`; // +30 atas, +5 bawah
+      }
+
+      // panggil pertama kali & setiap waktu tertentu
+      updateTouchLayerPosition();
+      const intervalId = setInterval(updateTouchLayerPosition, 250);
+
+      // juga update saat rotasi / resize
+      window.addEventListener("resize", updateTouchLayerPosition);
+      window.addEventListener("orientationchange", updateTouchLayerPosition);
+
+      // === blokir click default ke bawah ===
+      ["mousedown", "click", "touchstart"].forEach((ev) => {
+        touchLayer.addEventListener(ev, (e) => e.preventDefault(), true);
+      });
+
+      // === drag logika manual ===
+      let isTouchDragging = false;
+      let startX = 0;
+      let startValue = 0;
+
+      touchLayer.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        isTouchDragging = true;
+        startX = e.touches[0].clientX;
+        startValue = Number(progressRange.value);
+      });
+
+      touchLayer.addEventListener("touchmove", (e) => {
+        if (!isTouchDragging) return;
+        e.preventDefault();
+        const dx = e.touches[0].clientX - startX;
+        const percentDelta = (dx / progressRange.offsetWidth) * 100;
+        const newValue = Math.max(0, Math.min(100, startValue + percentDelta));
+        progressRange.value = newValue;
+
+        const newTime = (newValue / 100) * player.getDuration();
+        previewTime.textContent = formatClock(newTime);
+        positionPreview(newValue);
+        preview.style.display = "flex";
+      });
+
+      touchLayer.addEventListener("touchend", (e) => {
+        if (!isTouchDragging) return;
+        e.preventDefault();
+        isTouchDragging = false;
+        const pct = Number(progressRange.value);
+        player.seekTo((pct / 100) * player.getDuration(), true);
+        preview.style.display = "none";
+      });
+
+      // bersihkan interval kalau video player dihapus
+      window.addEventListener("beforeunload", () => clearInterval(intervalId));
+    }
+  }
 }
 
 /* =====================================================
