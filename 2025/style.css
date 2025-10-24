@@ -408,7 +408,7 @@ footer {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  transition: left 0.1s ease, width 0.15s ease, height 0.15s ease;
+  transition: left 0.08s linear, transform 0.1s ease;
   box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.15);
   background: rgba(236, 72, 153, 0.95);
   cursor: pointer;
