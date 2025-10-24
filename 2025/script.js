@@ -209,6 +209,21 @@ function initCustomControls() {
   const volRange = document.getElementById("volumeRange");
   const fsBtn = document.getElementById("btnFullscreen");
 
+  // === Format waktu jam:menit:detik otomatis ===
+  function formatClock(sec) {
+    sec = Math.floor(sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, "0")}:${s
+        .toString()
+        .padStart(2, "0")}`;
+    } else {
+      return `${m}:${s.toString().padStart(2, "0")}`;
+    }
+  }
+
   // Progress update loop
   setInterval(() => {
     if (!player || typeof player.getDuration !== "function" || isDragging)
@@ -224,6 +239,18 @@ function initCustomControls() {
       )}`;
     }
   }, 250);
+
+  // Play / Pause
+  playBtn.addEventListener("click", () => {
+    const st = player.getPlayerState();
+    if (st === YT.PlayerState.PLAYING) {
+      player.pauseVideo();
+      updatePlayPauseIcons("paused");
+    } else {
+      player.playVideo();
+      updatePlayPauseIcons("playing");
+    }
+  });
 
   // --- (di dalam initCustomControls, setelah mengambil elemen progressRange & previewTime) ---
   const bufferBar = document.querySelector(".cust-progress-wrap .buffer-bar");
@@ -503,6 +530,49 @@ function initCustomControls() {
       window.addEventListener("beforeunload", () => clearInterval(intervalId));
     }
   }
+
+  // === AUTO HIDE CONTROL DAN PROGRESS (Desktop only) ===
+  if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    const playerContainer = document.querySelector(".player-container");
+    const controls = document.querySelector(".cust-controls");
+    const progressWrap = document.querySelector(".cust-progress-wrap");
+    const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
+
+    let hideTimeout = null;
+
+    function showControls() {
+      controls.classList.add("visible");
+      progressWrap.classList.add("visible");
+      clearTimeout(hideTimeout);
+    }
+
+    function hideControls() {
+      controls.classList.remove("visible");
+      progressWrap.classList.remove("visible");
+    }
+
+    // Saat mouse masuk area video → tampilkan
+    playerContainer.addEventListener("mouseenter", () => {
+      showControls();
+    });
+
+    // Saat mouse keluar area video → sembunyikan cepat
+    playerContainer.addEventListener("mouseleave", () => {
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        hideControls();
+      }, 800); // waktu delay sebelum hide (0.8 detik, seperti YouTube)
+    });
+
+    // === Sembunyikan garis hover (mouse-line) saat keluar progress bar ===
+    progressWrap.addEventListener("mouseenter", () => {
+      if (mouseLine) mouseLine.style.opacity = 1;
+    });
+
+    progressWrap.addEventListener("mouseleave", () => {
+      if (mouseLine) mouseLine.style.opacity = 0;
+    });
+  }
 }
 
 /* =====================================================
@@ -633,7 +703,23 @@ function initGestureOverlay() {
     // === MODE DESKTOP ===
     zoneLeft.style.pointerEvents = "none";
     zoneRight.style.pointerEvents = "none";
-    
+
+    // Klik tengah = play/pause
+    zoneCenter.addEventListener("click", () => {
+      if (singleTapTimer) clearTimeout(singleTapTimer);
+      singleTapTimer = setTimeout(() => {
+        const state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+          updatePlayPauseIcons("paused");
+        } else {
+          player.playVideo();
+          updatePlayPauseIcons("playing");
+        }
+        showIcon(iconPlayPause);
+      }, 200);
+    });
+
     // Double click = fullscreen toggle
     overlay.addEventListener("dblclick", (e) => {
       e.preventDefault();
