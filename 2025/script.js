@@ -211,7 +211,8 @@ function initCustomControls() {
 
   // Progress update loop
   setInterval(() => {
-    if (!player || typeof player.getDuration !== "function") return;
+    if (!player || typeof player.getDuration !== "function" || isDragging)
+      return;
     const total = player.getDuration() || 0;
     const current = player.getCurrentTime() || 0;
     if (total > 0) {
@@ -223,18 +224,6 @@ function initCustomControls() {
       )}`;
     }
   }, 250);
-
-  // Play / Pause
-  playBtn.addEventListener("click", () => {
-    const st = player.getPlayerState();
-    if (st === YT.PlayerState.PLAYING) {
-      player.pauseVideo();
-      updatePlayPauseIcons("paused");
-    } else {
-      player.playVideo();
-      updatePlayPauseIcons("playing");
-    }
-  });
 
   // --- (di dalam initCustomControls, setelah mengambil elemen progressRange & previewTime) ---
   const bufferBar = document.querySelector(".cust-progress-wrap .buffer-bar");
