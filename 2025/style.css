@@ -922,6 +922,10 @@ footer {
   /* buffer bar (abu-abu lebih terang) — berada di bawah range */
   .cust-progress-wrap {
     position: relative;
+    cursor: pointer;
+  }
+  .cust-progress-wrap:active {
+    cursor: grabbing; /* ketika sedang drag */
   }
   .cust-progress-wrap .buffer-bar {
     position: absolute;
@@ -965,6 +969,15 @@ footer {
     transition: width 0.05s linear, opacity 0.15s ease;
   }
 
+  /* agar input range tidak override cursor */
+  .cust-progress-wrap .progress-range {
+    cursor: pointer;
+  }
+
+  .cust-progress-wrap .progress-range:active {
+    cursor: grabbing;
+  }
+
   /* make preview bubble slightly higher on desktop to avoid overlap */
   .progress-preview {
     bottom: 34px;
@@ -990,4 +1003,3 @@ footer {
 .cust-progress-wrap .progress-range {
   pointer-events: auto;
 }
-
