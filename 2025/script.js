@@ -209,20 +209,23 @@ function initCustomControls() {
   const volRange = document.getElementById("volumeRange");
   const fsBtn = document.getElementById("btnFullscreen");
 
+  // tampilkan durasi awal ketika player siap
+  const intervalReady = setInterval(() => {
+    if (player && player.getDuration && player.getDuration() > 0) {
+      const timeDisplay = document.getElementById("timeDisplay");
+      timeDisplay.textContent = `0:00 / ${formatClock(player.getDuration())}`;
+      clearInterval(intervalReady);
+    }
+  }, 500);
+
   // Progress update loop
   setInterval(() => {
-    if (!player || typeof player.getDuration !== "function" || isDragging)
-      return;
-    const total = player.getDuration() || 0;
-    const current = player.getCurrentTime() || 0;
-    if (total > 0) {
-      const pct = (current / total) * 100;
-      progressRange.value = pct;
-      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${pct}%, rgba(200,200,200,0.15) ${pct}%)`;
-      timeDisplay.textContent = `${formatClock(current)} / ${formatClock(
-        total
-      )}`;
-    }
+    if (!player || typeof player.getDuration !== "function") return;
+
+    const total = player.getDuration();
+    const current = player.getCurrentTime();
+
+    if (isNaN(total) || total <= 0) return; // pastikan sudah ready
   }, 250);
 
   // Play / Pause
@@ -377,22 +380,22 @@ function initCustomControls() {
   }
 
   // === Full-frame click toggle Play/Pause (Desktop only) ===
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) === false) {
+  if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     const playerContainer = document.querySelector(".player-container");
 
     playerContainer.addEventListener("click", (e) => {
-      // abaikan klik jika terjadi di control bar atau progress bar
+      // abaikan klik jika terjadi di control bar, progress bar, atau overlay gesture
       const isInControlArea =
-        e.target.closest(".cust-control") ||
+        e.target.closest(".cust-controls") ||
         e.target.closest(".cust-progress-wrap") ||
         e.target.closest(".gesture-overlay");
 
-      if (isInControlArea) return; // jangan play/pause di area itu
+      if (isInControlArea) return; // jangan trigger play/pause di area itu
 
       // toggle play / pause
       if (!player) return;
-      const st = player.getPlayerState();
-      if (st === YT.PlayerState.PLAYING) {
+      const state = player.getPlayerState();
+      if (state === YT.PlayerState.PLAYING) {
         player.pauseVideo();
         updatePlayPauseIcons("paused");
       } else {
