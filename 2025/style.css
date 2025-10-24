@@ -928,6 +928,36 @@ footer {
     cursor: grabbing; /* ketika sedang drag */
   }
 
+  /* buffer bar (abu-abu lebih terang) — berada di bawah range */
+  .cust-progress-wrap {
+    position: relative;
+  }
+  .cust-progress-wrap .buffer-bar {
+    position: absolute;
+    left: 6px; /* sedikit offset supaya tidak tertutup oleh rounded thumb di kiri */
+    right: 6px;
+    height: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(200, 200, 200, 0.28); /* abu-abu terang */
+    border-radius: 6px;
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  /* garis bagian buffer actual (inner fill) - lebar diupdate oleh JS */
+  .cust-progress-wrap .buffer-bar .buffer-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    background: rgba(200, 200, 200, 0.45);
+    border-radius: 6px;
+    transition: width 200ms linear;
+  }
+
   /* garis mouse (garis tip ketika hover) */
   .cust-progress-wrap .mouse-line {
     position: absolute;
@@ -957,6 +987,13 @@ footer {
   /* make preview bubble slightly higher on desktop to avoid overlap */
   .progress-preview {
     bottom: 34px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+  }
+
+  .cust-progress-wrap:hover .progress-preview {
+    opacity: 1;
   }
 }
 
