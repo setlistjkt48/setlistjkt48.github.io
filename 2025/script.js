@@ -322,44 +322,56 @@ function initCustomControls() {
     }
   });
 
-  // --- Dragging improvements (desktop) ---
-  let isDragging = false;
-  let dragStartX = 0;
-  let dragStartValue = 0;
-  let pendingSeekPCT = null;
+  // === Smooth click & drag progress bar (Desktop only) ===
+if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) === false) {
+  const progressWrap = document.querySelector(".cust-progress-wrap");
 
-  progressRange.addEventListener("mousedown", (e) => {
+  let isDragging = false;
+
+  progressWrap.addEventListener("mousedown", (e) => {
     e.preventDefault();
     isDragging = true;
-    dragStartX = e.clientX;
-    dragStartValue = Number(progressRange.value);
+    handleSeek(e); // langsung loncat ke posisi klik
+
+    // tampilkan preview sementara (optional)
     preview.style.display = "flex";
-    mouseLine.style.opacity = 1;
   });
 
   document.addEventListener("mousemove", (e) => {
     if (!isDragging) return;
-    e.preventDefault();
-    // compute new value using dx
-    const dx = e.clientX - dragStartX;
-    const percentDelta = (dx / progressRange.offsetWidth) * 100;
-    let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
-    // apply to input visually
-    progressRange.value = newValue;
-    // update preview fast with rAF
-    lastMousePct = newValue;
-    schedulePreviewUpdate();
-    // set pending seek but do not call player.seekTo on every mousemove (reduce churn)
-    pendingSeekPCT = newValue;
+    handleSeek(e); // perbarui posisi saat drag
   });
 
   document.addEventListener("mouseup", (e) => {
     if (!isDragging) return;
-    e.preventDefault();
     isDragging = false;
+    handleSeek(e); // pastikan posisi final akurat
     preview.style.display = "none";
-    mouseLine.style.opacity = 0;
+  });
 
+  function handleSeek(e) {
+    const rect = progressWrap.getBoundingClientRect();
+    const pct = ((e.clientX - rect.left) / rect.width) * 100;
+    const clamped = Math.max(0, Math.min(100, pct));
+
+    // langsung ubah posisi slider (dot)
+    progressRange.value = clamped;
+
+    // ubah tampilan background bar (pink dan abu2)
+    progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${clamped}%, rgba(200,200,200,0.15) ${clamped}%)`;
+
+    // update waktu preview
+    const duration = player.getDuration ? player.getDuration() : 0;
+    const seekTime = (clamped / 100) * duration;
+    previewTime.textContent = formatClock(seekTime);
+    preview.style.left = `${clamped}%`;
+
+    // langsung loncat ke waktu baru (tanpa delay)
+    if (player && typeof player.seekTo === "function") {
+      player.seekTo(seekTime, true);
+    }
+  }
+}
     // perform final seek once
     const pct =
       pendingSeekPCT !== null ? pendingSeekPCT : Number(progressRange.value);
@@ -1094,3 +1106,4 @@ document.addEventListener("DOMContentLoaded", () => {
     initAutoHideControls(); // auto-hide custom controls
   }, 1000);
 });
+
