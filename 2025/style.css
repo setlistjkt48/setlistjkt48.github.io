@@ -717,7 +717,7 @@ footer {
 
   /* Saat video diputar: progress bar turun ke paling bawah */
   .player-container.mobile-playing .cust-progress-wrap {
-    bottom: -3px; /* menempel ke bawah */
+    bottom: 0px; /* menempel ke bawah */
     transition: bottom 0.3s ease;
   }
 
@@ -870,7 +870,7 @@ footer {
 }
 
 .player-container.mobile-playing .cust-progress-wrap {
-  bottom: -3px;
+  bottom: 0px;
 }
 
 /* Saat pause, tampilkan kembali */
@@ -883,3 +883,109 @@ footer {
   bottom: 40px;
 }
 
+/* ---------- Progress / Buffer / Hover (desktop-only) ---------- */
+@media (min-width: 901px) {
+  /* kecilkan dot default (desktop) */
+  .progress-range::-webkit-slider-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.12);
+    background: rgba(236, 72, 153, 0.95);
+    transition: width 120ms ease, height 120ms ease, box-shadow 120ms;
+  }
+  .progress-range::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(236, 72, 153, 0.95);
+    transition: width 120ms ease, height 120ms ease;
+  }
+
+  /* saat kursor hover di area progress -> thumb sedikit lebih besar */
+
+  .cust-progress-wrap:active .progress-range::-webkit-slider-thumb {
+    transform: scale(1.3);
+    transition: transform 0.15s ease;
+  }
+  .cust-progress-wrap:hover .progress-range::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+    box-shadow: 0 0 0 6px rgba(236, 72, 153, 0.14);
+  }
+  .cust-progress-wrap:hover .progress-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* buffer bar (abu-abu lebih terang) — berada di bawah range */
+  .cust-progress-wrap {
+    position: relative;
+  }
+  .cust-progress-wrap .buffer-bar {
+    position: absolute;
+    left: 6px; /* sedikit offset supaya tidak tertutup oleh rounded thumb di kiri */
+    right: 6px;
+    height: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(200, 200, 200, 0.28); /* abu-abu terang */
+    border-radius: 6px;
+    z-index: 6;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  /* garis bagian buffer actual (inner fill) - lebar diupdate oleh JS */
+  .cust-progress-wrap .buffer-bar .buffer-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    background: rgba(200, 200, 200, 0.45);
+    border-radius: 6px;
+    transition: width 200ms linear;
+  }
+
+  /* garis mouse (garis tip ketika hover) */
+  .cust-progress-wrap .mouse-line {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 6px;
+    transform: translateY(-50%);
+    background: rgba(200, 200, 200, 0.25);
+    border-radius: 6px;
+    width: 0%;
+    z-index: 12;
+    pointer-events: none;
+    opacity: 0;
+    transition: width 0.05s linear, opacity 0.15s ease;
+  }
+
+  /* make preview bubble slightly higher on desktop to avoid overlap */
+  .progress-preview {
+    bottom: 34px;
+  }
+}
+
+/* mobile remains unchanged (current CSS already handles mobile) */
+/* === Progress Bar Position Fix === */
+.cust-progress-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px; /* naik 40px dari bawah video */
+  width: 100%;
+  z-index: 10; /* pastikan di atas video tapi di bawah control */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* biar tidak ganggu klik di luar range */
+}
+
+/* biar input range bisa tetap di-klik dan di-drag */
+.cust-progress-wrap .progress-range {
+  pointer-events: auto;
+}
