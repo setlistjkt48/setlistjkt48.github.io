@@ -953,22 +953,6 @@ footer {
     transition: width 200ms linear;
   }
 
-  /* garis mouse (garis tip ketika hover) */
-  .cust-progress-wrap .mouse-line {
-    position: absolute;
-    left: 0;
-    top: 50%;
-    height: 6px;
-    transform: translateY(-50%);
-    background: rgba(200, 200, 200, 0.18);
-    border-radius: 6px;
-    width: 0%;
-    z-index: 5;
-    pointer-events: none;
-    opacity: 0;
-    transition: width 0.05s linear, opacity 0.15s ease;
-  }
-
   /* agar input range tidak override cursor */
   .cust-progress-wrap .progress-range {
     cursor: pointer;
