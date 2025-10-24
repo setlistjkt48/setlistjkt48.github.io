@@ -1033,3 +1033,22 @@ footer {
 .cust-progress-wrap .progress-range {
   pointer-events: auto;
 }
+
+/* --- Auto Hide Animation --- */
+.cust-controls,
+.cust-progress-wrap {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.cust-controls:not(.visible),
+.cust-progress-wrap:not(.visible) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- Mouse-line default hidden --- */
+.cust-progress-wrap .mouse-line {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
