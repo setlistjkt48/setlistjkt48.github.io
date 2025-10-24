@@ -938,7 +938,7 @@ footer {
     background: rgba(255, 255, 255, 0.18);
     border-radius: 6px;
     width: 0%;
-    z-index: 12;
+    z-index: 2;
     pointer-events: none;
     opacity: 0;
     transition: width 0.05s linear, opacity 0.15s ease;
@@ -947,6 +947,7 @@ footer {
   /* agar input range tidak override cursor */
   .cust-progress-wrap .progress-range {
     cursor: pointer;
+    z-index: 2;
   }
 
   .cust-progress-wrap .progress-range:active {
