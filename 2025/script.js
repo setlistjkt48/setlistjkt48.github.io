@@ -442,6 +442,97 @@ function initCustomControls() {
     else document.exitFullscreen();
   });
 
+  // === Format waktu otomatis jam:menit:detik ===
+  function formatClock(sec) {
+    sec = Math.floor(sec);
+    if (isNaN(sec) || sec < 0) return "0:00";
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return h > 0
+      ? `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
+      : `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
+  // === Durasi & progress update ===
+  setInterval(() => {
+    if (!player || typeof player.getDuration !== "function") return;
+
+    const total = player.getDuration();
+    const current = player.getCurrentTime();
+
+    // hanya update jika video sudah memiliki durasi valid
+    if (!isNaN(total) && total > 0) {
+      const pct = (current / total) * 100;
+      progressRange.value = pct;
+      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${pct}%, rgba(200,200,200,0.15) ${pct}%)`;
+
+      // tampilkan waktu yang benar
+      timeDisplay.textContent = `${formatClock(current)} / ${formatClock(
+        total
+      )}`;
+    }
+  }, 250);
+
+  // === Tampilkan durasi total di awal ketika player ready ===
+  if (player && typeof player.addEventListener === "function") {
+    player.addEventListener("onReady", () => {
+      const total = player.getDuration();
+      if (total > 0) {
+        timeDisplay.textContent = `0:00 / ${formatClock(total)}`;
+      }
+    });
+  }
+
+  // === Full-frame single click Play/Pause (Desktop + Mobile) ===
+  const playerContainer = document.querySelector(".player-container");
+  let lastClickTime = 0;
+
+  playerContainer.addEventListener("click", (e) => {
+    // Abaikan klik di area kontrol bawah atau progress bar
+    const inControl =
+      e.target.closest(".cust-controls") ||
+      e.target.closest(".cust-progress-wrap");
+
+    if (inControl) return;
+
+    // Cegah trigger dobel di HP (tap dua kali)
+    const now = Date.now();
+    if (now - lastClickTime < 350) return;
+    lastClickTime = now;
+
+    // Jalankan toggle play/pause
+    if (!player || typeof player.getPlayerState !== "function") return;
+    const state = player.getPlayerState();
+
+    if (state === YT.PlayerState.PLAYING) {
+      player.pauseVideo();
+      updatePlayPauseIcons("paused");
+      // ketika paused, tampilkan kembali pointer
+      playerContainer.style.cursor = "pointer";
+    } else {
+      player.playVideo();
+      updatePlayPauseIcons("playing");
+      // ketika sedang play, sembunyikan pointer
+      playerContainer.style.cursor = "default";
+    }
+  });
+
+  // === Set awal: pointer aktif sebelum video dimulai ===
+  playerContainer.style.cursor = "pointer";
+
+  // === Sinkronkan cursor saat status player berubah ===
+  if (player && typeof player.addEventListener === "function") {
+    player.addEventListener("onStateChange", (event) => {
+      const state = event.data;
+      if (state === YT.PlayerState.PLAYING) {
+        playerContainer.style.cursor = "default";
+      } else if (state === YT.PlayerState.PAUSED) {
+        playerContainer.style.cursor = "pointer";
+      }
+    });
+  }
+
   // === Perluas area drag progress di mode HP (posisi adaptif) ===
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     const progressWrap = document.querySelector(".cust-progress-wrap");
