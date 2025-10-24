@@ -1052,3 +1052,14 @@ footer {
   opacity: 0;
   transition: opacity 0.15s ease;
 }
+
+.player-container {
+  transition: cursor 0.2s ease;
+}
+
+.player-container * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
