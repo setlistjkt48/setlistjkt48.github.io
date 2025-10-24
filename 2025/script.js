@@ -633,23 +633,7 @@ function initGestureOverlay() {
     // === MODE DESKTOP ===
     zoneLeft.style.pointerEvents = "none";
     zoneRight.style.pointerEvents = "none";
-
-    // Klik tengah = play/pause
-    zoneCenter.addEventListener("click", () => {
-      if (singleTapTimer) clearTimeout(singleTapTimer);
-      singleTapTimer = setTimeout(() => {
-        const state = player.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          player.pauseVideo();
-          updatePlayPauseIcons("paused");
-        } else {
-          player.playVideo();
-          updatePlayPauseIcons("playing");
-        }
-        showIcon(iconPlayPause);
-      }, 200);
-    });
-
+    
     // Double click = fullscreen toggle
     overlay.addEventListener("dblclick", (e) => {
       e.preventDefault();
