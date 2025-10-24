@@ -326,46 +326,49 @@ function initCustomControls() {
   // We only added buffer updates + hover improvements.
 
   // === Smooth instant seek & drag (Desktop only) ===
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) === false) {
+  if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     const progressWrap = document.querySelector(".cust-progress-wrap");
-
     let isDragging = false;
 
-    // Saat klik di progress bar — langsung loncat
     progressWrap.addEventListener("mousedown", (e) => {
       e.preventDefault();
       isDragging = true;
-      handleSeek(e); // langsung loncat ke posisi mouse
+
+      // 🔥 Langsung ubah posisi dot ke titik mouse saat klik pertama
+      handleSeek(e);
     });
 
     document.addEventListener("mousemove", (e) => {
       if (!isDragging) return;
-      handleSeek(e); // dot langsung mengikuti mouse
+      handleSeek(e); // selama drag, dot mengikuti mouse
     });
 
     document.addEventListener("mouseup", (e) => {
       if (!isDragging) return;
       isDragging = false;
-      handleSeek(e); // pastikan posisi akhir
+      handleSeek(e); // pastikan posisi akhir benar
+      preview.style.display = "none";
     });
 
+    // fungsi untuk menghitung posisi dan update tampilan
     function handleSeek(e) {
       const rect = progressWrap.getBoundingClientRect();
       const pct = ((e.clientX - rect.left) / rect.width) * 100;
       const clamped = Math.max(0, Math.min(100, pct));
 
-      // Update tampilan progress
+      // langsung pindahkan dot ke posisi mouse
       progressRange.value = clamped;
       progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${clamped}%, rgba(200,200,200,0.15) ${clamped}%)`;
 
-      // Update waktu dan posisi preview
       const duration = player.getDuration ? player.getDuration() : 0;
       const seekTime = (clamped / 100) * duration;
+
+      // update preview waktu (opsional)
       previewTime.textContent = formatClock(seekTime);
       preview.style.left = `${clamped}%`;
       preview.style.display = "flex";
 
-      // Langsung loncat ke posisi
+      // langsung seek video ke waktu baru (tanpa delay)
       if (player && typeof player.seekTo === "function") {
         player.seekTo(seekTime, true);
       }
