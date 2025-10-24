@@ -927,30 +927,21 @@ footer {
   .cust-progress-wrap:active {
     cursor: grabbing; /* ketika sedang drag */
   }
-  .cust-progress-wrap .buffer-bar {
-    position: absolute;
-    left: 6px; /* sedikit offset supaya tidak tertutup oleh rounded thumb di kiri */
-    right: 6px;
-    height: 6px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(200, 200, 200, 0.28); /* abu-abu terang */
-    border-radius: 6px;
-    z-index: 6;
-    pointer-events: none;
-    overflow: hidden;
-  }
 
-  /* garis bagian buffer actual (inner fill) - lebar diupdate oleh JS */
-  .cust-progress-wrap .buffer-bar .buffer-fill {
+  /* garis mouse (garis tip ketika hover) */
+  .cust-progress-wrap .mouse-line {
     position: absolute;
     left: 0;
-    top: 0;
-    height: 100%;
-    width: 0%;
-    background: rgba(200, 200, 200, 0.45);
+    top: 50%;
+    height: 6px;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.18);
     border-radius: 6px;
-    transition: width 200ms linear;
+    width: 0%;
+    z-index: 12;
+    pointer-events: none;
+    opacity: 0;
+    transition: width 0.05s linear, opacity 0.15s ease;
   }
 
   /* agar input range tidak override cursor */
