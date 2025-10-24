@@ -236,87 +236,256 @@ function initCustomControls() {
     }
   });
 
-  // Seek / Preview - versi final
+  // --- (di dalam initCustomControls, setelah mengambil elemen progressRange & previewTime) ---
+  const bufferBar = document.querySelector(".cust-progress-wrap .buffer-bar");
+  const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
+
+  // make sure buffer fill exists (create once)
+  let bufferFill = bufferBar.querySelector(".buffer-fill");
+  if (!bufferFill) {
+    bufferFill = document.createElement("div");
+    bufferFill.className = "buffer-fill";
+    bufferBar.appendChild(bufferFill);
+  }
+
+  // rAF flag untuk mousemove / buffer updates
+  let rafPending = false;
+  let lastMousePct = 0;
+
+  // update buffer (YouTube) regularly but lightweight
+  function updateBuffer() {
+    if (!player || typeof player.getVideoLoadedFraction !== "function") return;
+    const frac = player.getVideoLoadedFraction
+      ? player.getVideoLoadedFraction()
+      : 0;
+    const pct = Math.max(0, Math.min(1, frac)) * 100;
+    // set width smoothly
+    bufferFill.style.width = pct + "%";
+  }
+
+  // small interval to update buffer — lightweight
+  setInterval(updateBuffer, 500); // cukup 0.5s
+
+  // rAF-driven preview positioning & mouse-line update
+  function schedulePreviewUpdate() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      // position preview and mouseLine given lastMousePct
+      const wrap = document.querySelector(".cust-progress-wrap");
+      const wrapRect = wrap.getBoundingClientRect();
+      const x =
+        (Math.max(0, Math.min(100, lastMousePct)) / 100) * wrapRect.width;
+      // position preview
+      preview.style.left = `${x}px`;
+      // mouse line width -> from start to mouse pos
+      mouseLine.style.width = `${Math.max(0, Math.min(100, lastMousePct))}%`;
+      mouseLine.style.opacity = 1;
+      // preview time based on pct
+      const newTime =
+        (lastMousePct / 100) * (player.getDuration ? player.getDuration() : 0);
+      previewTime.textContent = formatClock(newTime);
+    });
+  }
+
+  // compute pct from event (clientX)
+  function pctFromClientX(clientX) {
+    const wrap = document.querySelector(".cust-progress-wrap");
+    const wrapRect = wrap.getBoundingClientRect();
+    const px = clientX - wrapRect.left;
+    return (px / wrapRect.width) * 100;
+  }
+
+  // --- Hover / Mouse move (desktop) ---
+  progressRange.addEventListener("mousemove", (e) => {
+    // only desktop behavior (touch handled separately)
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+    lastMousePct = Math.max(0, Math.min(100, pctFromClientX(e.clientX)));
+    preview.style.display = "flex";
+    // schedule rAF update
+    schedulePreviewUpdate();
+  });
+
+  // show preview on mouseenter
+  progressRange.addEventListener("mouseenter", () => {
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+    preview.style.display = "flex";
+    mouseLine.style.opacity = 1;
+  });
+
+  // hide preview & mouse line on leave (if not dragging)
+  progressRange.addEventListener("mouseleave", () => {
+    if (!isDragging) {
+      preview.style.display = "none";
+      mouseLine.style.opacity = 0;
+    }
+  });
+
+  // --- Dragging improvements (desktop) ---
   let isDragging = false;
   let dragStartX = 0;
   let dragStartValue = 0;
-
-  // 🧠 Matikan perilaku bawaan browser pada input range
-  ["mousedown", "touchstart"].forEach((evt) => {
-    progressRange.addEventListener(evt, (e) => e.preventDefault());
-  });
+  let pendingSeekPCT = null;
 
   progressRange.addEventListener("mousedown", (e) => {
-    e.preventDefault(); // cegah default drag bawaan range
+    e.preventDefault();
     isDragging = true;
     dragStartX = e.clientX;
     dragStartValue = Number(progressRange.value);
+    preview.style.display = "flex";
+    mouseLine.style.opacity = 1;
   });
 
   document.addEventListener("mousemove", (e) => {
     if (!isDragging) return;
     e.preventDefault();
+    // compute new value using dx
     const dx = e.clientX - dragStartX;
     const percentDelta = (dx / progressRange.offsetWidth) * 100;
     let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
+    // apply to input visually
     progressRange.value = newValue;
-
-    const newTime = (newValue / 100) * player.getDuration();
-    previewTime.textContent = formatClock(newTime);
-    positionPreview(newValue);
-    preview.style.display = "flex";
+    // update preview fast with rAF
+    lastMousePct = newValue;
+    schedulePreviewUpdate();
+    // set pending seek but do not call player.seekTo on every mousemove (reduce churn)
+    pendingSeekPCT = newValue;
   });
 
   document.addEventListener("mouseup", (e) => {
     if (!isDragging) return;
     e.preventDefault();
     isDragging = false;
-    const pct = Number(progressRange.value);
-    player.seekTo((pct / 100) * player.getDuration(), true);
     preview.style.display = "none";
+    mouseLine.style.opacity = 0;
+
+    // perform final seek once
+    const pct =
+      pendingSeekPCT !== null ? pendingSeekPCT : Number(progressRange.value);
+    pendingSeekPCT = null;
+    if (player && typeof player.seekTo === "function") {
+      player.seekTo((pct / 100) * player.getDuration(), true);
+    }
   });
 
-  // === Touch (HP) ===
+  // --- Touch handling (leave as existing, but update to also control mouseLine) ---
   progressRange.addEventListener("touchstart", (e) => {
     e.preventDefault();
     isDragging = true;
     dragStartX = e.touches[0].clientX;
     dragStartValue = Number(progressRange.value);
-  });
-
-  document.addEventListener("touchmove", (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const dx = e.touches[0].clientX - dragStartX;
-    const percentDelta = (dx / progressRange.offsetWidth) * 100;
-    let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
-    progressRange.value = newValue;
-
-    const newTime = (newValue / 100) * player.getDuration();
-    previewTime.textContent = formatClock(newTime);
-    positionPreview(newValue);
     preview.style.display = "flex";
+    mouseLine.style.opacity = 1;
   });
 
-  document.addEventListener("touchend", (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    isDragging = false;
-    const pct = Number(progressRange.value);
-    player.seekTo((pct / 100) * player.getDuration(), true);
-    preview.style.display = "none";
-  });
+  document.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const dx = e.touches[0].clientX - dragStartX;
+      const percentDelta = (dx / progressRange.offsetWidth) * 100;
+      let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
+      progressRange.value = newValue;
+      lastMousePct = newValue;
+      schedulePreviewUpdate();
+      pendingSeekPCT = newValue;
+    },
+    { passive: false }
+  );
 
-  // tetap sembunyikan preview jika mouse keluar
-  progressRange.addEventListener("mouseleave", () => {
-    if (!isDragging) preview.style.display = "none";
-  });
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      isDragging = false;
+      preview.style.display = "none";
+      mouseLine.style.opacity = 0;
+      const pct =
+        pendingSeekPCT !== null ? pendingSeekPCT : Number(progressRange.value);
+      pendingSeekPCT = null;
+      if (player && typeof player.seekTo === "function") {
+        player.seekTo((pct / 100) * player.getDuration(), true);
+      }
+    },
+    { passive: false }
+  );
 
-  function positionPreview(pct) {
+  // Keep existing periodic progress updater (which you already had) - it will keep progressRange.value in sync.
+  // We only added buffer updates + hover improvements.
+
+  // === Klik langsung ke posisi mouse (Desktop only) ===
+  progressRange.addEventListener("click", (e) => {
+    // jalankan hanya di desktop
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+
     const wrap = document.querySelector(".cust-progress-wrap");
-    const wrapRect = wrap.getBoundingClientRect();
-    const x = (Math.max(0, Math.min(100, pct)) / 100) * wrapRect.width;
-    preview.style.left = `${x}px`;
+    const rect = wrap.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = (clickX / rect.width) * 100;
+
+    // update tampilan progress bar & player
+    progressRange.value = pct;
+
+    if (player && typeof player.seekTo === "function") {
+      const duration = player.getDuration ? player.getDuration() : 0;
+      const seekTime = (pct / 100) * duration;
+      player.seekTo(seekTime, true);
+    }
+
+    // update preview waktu & posisi (opsional, supaya muncul durasi kecil di atas)
+    if (preview && previewTime) {
+      previewTime.textContent = formatClock(
+        (pct / 100) * (player.getDuration ? player.getDuration() : 0)
+      );
+      preview.style.left = `${clickX}px`;
+      preview.style.display = "flex";
+      setTimeout(() => (preview.style.display = "none"), 800);
+    }
+  });
+
+  // === Hover buffer line (Desktop only) ===
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) === false) {
+    const wrap = document.querySelector(".cust-progress-wrap");
+    const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
+
+    wrap.addEventListener("mousemove", (e) => {
+      const rect = wrap.getBoundingClientRect();
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      mouseLine.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+      mouseLine.style.opacity = 1;
+    });
+
+    wrap.addEventListener("mouseleave", () => {
+      mouseLine.style.opacity = 0;
+    });
+  }
+
+  // === Full-frame click toggle Play/Pause (Desktop only) ===
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) === false) {
+    const playerContainer = document.querySelector(".player-container");
+
+    playerContainer.addEventListener("click", (e) => {
+      // abaikan klik jika terjadi di control bar atau progress bar
+      const isInControlArea =
+        e.target.closest(".cust-control") ||
+        e.target.closest(".cust-progress-wrap");
+
+      if (isInControlArea) return; // jangan play/pause di area itu
+
+      // toggle play / pause
+      if (!player) return;
+      const st = player.getPlayerState();
+      if (st === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+        updatePlayPauseIcons("paused");
+      } else {
+        player.playVideo();
+        updatePlayPauseIcons("playing");
+      }
+    });
   }
 
   // Volume logic (fix restore volume)
