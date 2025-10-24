@@ -209,21 +209,6 @@ function initCustomControls() {
   const volRange = document.getElementById("volumeRange");
   const fsBtn = document.getElementById("btnFullscreen");
 
-  // === Format waktu jam:menit:detik otomatis ===
-  function formatClock(sec) {
-    sec = Math.floor(sec);
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    if (h > 0) {
-      return `${h}:${m.toString().padStart(2, "0")}:${s
-        .toString()
-        .padStart(2, "0")}`;
-    } else {
-      return `${m}:${s.toString().padStart(2, "0")}`;
-    }
-  }
-
   // Progress update loop
   setInterval(() => {
     if (!player || typeof player.getDuration !== "function" || isDragging)
@@ -399,7 +384,8 @@ function initCustomControls() {
       // abaikan klik jika terjadi di control bar atau progress bar
       const isInControlArea =
         e.target.closest(".cust-control") ||
-        e.target.closest(".cust-progress-wrap");
+        e.target.closest(".cust-progress-wrap") ||
+        e.target.closest(".gesture-overlay");
 
       if (isInControlArea) return; // jangan play/pause di area itu
 
@@ -703,22 +689,6 @@ function initGestureOverlay() {
     // === MODE DESKTOP ===
     zoneLeft.style.pointerEvents = "none";
     zoneRight.style.pointerEvents = "none";
-
-    // Klik tengah = play/pause
-    zoneCenter.addEventListener("click", () => {
-      if (singleTapTimer) clearTimeout(singleTapTimer);
-      singleTapTimer = setTimeout(() => {
-        const state = player.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          player.pauseVideo();
-          updatePlayPauseIcons("paused");
-        } else {
-          player.playVideo();
-          updatePlayPauseIcons("playing");
-        }
-        showIcon(iconPlayPause);
-      }, 200);
-    });
 
     // Double click = fullscreen toggle
     overlay.addEventListener("dblclick", (e) => {
