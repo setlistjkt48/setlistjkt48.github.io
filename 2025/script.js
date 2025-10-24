@@ -456,7 +456,8 @@ function initCustomControls() {
 
   // === Durasi & progress update ===
   setInterval(() => {
-    if (!player || typeof player.getDuration !== "function") return;
+    if (!player || typeof player.getDuration !== "function" || isDragging)
+      return;
 
     const total = player.getDuration();
     const current = player.getCurrentTime();
@@ -947,14 +948,49 @@ document.addEventListener("DOMContentLoaded", initKeyboardControls);
 ===================================================== */
 function updatePlayPauseIcons(state) {
   const playBtn = document.getElementById("btnPlayPause");
-  const gestureIcon = document.querySelector(".gesture-icon.playpause");
+  const playerContainer = document.querySelector(".player-container");
 
+  // update ikon pada tombol control
   if (state === "playing") {
     if (playBtn) playBtn.textContent = "❚❚";
-    if (gestureIcon) gestureIcon.textContent = "❚❚";
+    showCenterIcon("pause");
+    playerContainer.style.cursor = "default";
   } else if (state === "paused") {
     if (playBtn) playBtn.textContent = "▶";
-    if (gestureIcon) gestureIcon.textContent = "▶";
+    showCenterIcon("play");
+    playerContainer.style.cursor = "pointer";
+  }
+
+  // === fungsi internal animasi ikon tengah (tanpa HTML tambahan) ===
+  function showCenterIcon(type) {
+    const icon = document.createElement("div");
+    icon.textContent = type === "play" ? "▶" : "❚❚";
+    Object.assign(icon.style, {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%) scale(1.2)",
+      fontSize: "70px",
+      color: "rgba(255, 255, 255, 0.85)",
+      opacity: "0",
+      pointerEvents: "none",
+      transition: "opacity 0.25s ease, transform 0.25s ease",
+      zIndex: "999",
+    });
+    playerContainer.appendChild(icon);
+
+    // animasi fade-in
+    requestAnimationFrame(() => {
+      icon.style.opacity = "1";
+      icon.style.transform = "translate(-50%, -50%) scale(1)";
+    });
+
+    // hilangkan lagi setelah animasi
+    setTimeout(() => {
+      icon.style.opacity = "0";
+      icon.style.transform = "translate(-50%, -50%) scale(0.9)";
+      setTimeout(() => icon.remove(), 300);
+    }, 400);
   }
 }
 
