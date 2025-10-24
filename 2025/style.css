@@ -408,6 +408,7 @@ footer {
   width: 14px;
   height: 14px;
   border-radius: 50%;
+  transition: left 0.1s ease, width 0.15s ease, height 0.15s ease;
   box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.15);
   background: rgba(236, 72, 153, 0.95);
   cursor: pointer;
@@ -955,10 +956,10 @@ footer {
     top: 50%;
     height: 6px;
     transform: translateY(-50%);
-    background: rgba(200, 200, 200, 0.25);
+    background: rgba(200, 200, 200, 0.18);
     border-radius: 6px;
     width: 0%;
-    z-index: 12;
+    z-index: 5;
     pointer-events: none;
     opacity: 0;
     transition: width 0.05s linear, opacity 0.15s ease;
@@ -989,3 +990,4 @@ footer {
 .cust-progress-wrap .progress-range {
   pointer-events: auto;
 }
+
