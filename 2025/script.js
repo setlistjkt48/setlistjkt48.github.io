@@ -322,157 +322,54 @@ function initCustomControls() {
     }
   });
 
-  // === Smooth click & drag progress bar (Desktop only) ===
-if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) === false) {
-  const progressWrap = document.querySelector(".cust-progress-wrap");
-
-  let isDragging = false;
-
-  progressWrap.addEventListener("mousedown", (e) => {
-    e.preventDefault();
-    isDragging = true;
-    handleSeek(e); // langsung loncat ke posisi klik
-
-    // tampilkan preview sementara (optional)
-    preview.style.display = "flex";
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    handleSeek(e); // perbarui posisi saat drag
-  });
-
-  document.addEventListener("mouseup", (e) => {
-    if (!isDragging) return;
-    isDragging = false;
-    handleSeek(e); // pastikan posisi final akurat
-    preview.style.display = "none";
-  });
-
-  function handleSeek(e) {
-    const rect = progressWrap.getBoundingClientRect();
-    const pct = ((e.clientX - rect.left) / rect.width) * 100;
-    const clamped = Math.max(0, Math.min(100, pct));
-
-    // langsung ubah posisi slider (dot)
-    progressRange.value = clamped;
-
-    // ubah tampilan background bar (pink dan abu2)
-    progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${clamped}%, rgba(200,200,200,0.15) ${clamped}%)`;
-
-    // update waktu preview
-    const duration = player.getDuration ? player.getDuration() : 0;
-    const seekTime = (clamped / 100) * duration;
-    previewTime.textContent = formatClock(seekTime);
-    preview.style.left = `${clamped}%`;
-
-    // langsung loncat ke waktu baru (tanpa delay)
-    if (player && typeof player.seekTo === "function") {
-      player.seekTo(seekTime, true);
-    }
-  }
-}
-    // perform final seek once
-    const pct =
-      pendingSeekPCT !== null ? pendingSeekPCT : Number(progressRange.value);
-    pendingSeekPCT = null;
-    if (player && typeof player.seekTo === "function") {
-      player.seekTo((pct / 100) * player.getDuration(), true);
-    }
-  });
-
-  // --- Touch handling (leave as existing, but update to also control mouseLine) ---
-  progressRange.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    isDragging = true;
-    dragStartX = e.touches[0].clientX;
-    dragStartValue = Number(progressRange.value);
-    preview.style.display = "flex";
-    mouseLine.style.opacity = 1;
-  });
-
-  document.addEventListener(
-    "touchmove",
-    (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      const dx = e.touches[0].clientX - dragStartX;
-      const percentDelta = (dx / progressRange.offsetWidth) * 100;
-      let newValue = Math.max(0, Math.min(100, dragStartValue + percentDelta));
-      progressRange.value = newValue;
-      lastMousePct = newValue;
-      schedulePreviewUpdate();
-      pendingSeekPCT = newValue;
-    },
-    { passive: false }
-  );
-
-  document.addEventListener(
-    "touchend",
-    (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      isDragging = false;
-      preview.style.display = "none";
-      mouseLine.style.opacity = 0;
-      const pct =
-        pendingSeekPCT !== null ? pendingSeekPCT : Number(progressRange.value);
-      pendingSeekPCT = null;
-      if (player && typeof player.seekTo === "function") {
-        player.seekTo((pct / 100) * player.getDuration(), true);
-      }
-    },
-    { passive: false }
-  );
-
   // Keep existing periodic progress updater (which you already had) - it will keep progressRange.value in sync.
   // We only added buffer updates + hover improvements.
 
-  // === Klik langsung ke posisi mouse (Desktop only) ===
-  progressRange.addEventListener("click", (e) => {
-    // jalankan hanya di desktop
-    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
-
-    const wrap = document.querySelector(".cust-progress-wrap");
-    const rect = wrap.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const pct = (clickX / rect.width) * 100;
-
-    // update tampilan progress bar & player
-    progressRange.value = pct;
-
-    if (player && typeof player.seekTo === "function") {
-      const duration = player.getDuration ? player.getDuration() : 0;
-      const seekTime = (pct / 100) * duration;
-      player.seekTo(seekTime, true);
-    }
-
-    // update preview waktu & posisi (opsional, supaya muncul durasi kecil di atas)
-    if (preview && previewTime) {
-      previewTime.textContent = formatClock(
-        (pct / 100) * (player.getDuration ? player.getDuration() : 0)
-      );
-      preview.style.left = `${clickX}px`;
-      preview.style.display = "flex";
-      setTimeout(() => (preview.style.display = "none"), 800);
-    }
-  });
-
-  // === Hover buffer line (Desktop only) ===
+  // === Smooth instant seek & drag (Desktop only) ===
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) === false) {
-    const wrap = document.querySelector(".cust-progress-wrap");
-    const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
+    const progressWrap = document.querySelector(".cust-progress-wrap");
 
-    wrap.addEventListener("mousemove", (e) => {
-      const rect = wrap.getBoundingClientRect();
+    let isDragging = false;
+
+    // Saat klik di progress bar — langsung loncat
+    progressWrap.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      isDragging = true;
+      handleSeek(e); // langsung loncat ke posisi mouse
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      handleSeek(e); // dot langsung mengikuti mouse
+    });
+
+    document.addEventListener("mouseup", (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      handleSeek(e); // pastikan posisi akhir
+    });
+
+    function handleSeek(e) {
+      const rect = progressWrap.getBoundingClientRect();
       const pct = ((e.clientX - rect.left) / rect.width) * 100;
-      mouseLine.style.width = `${Math.max(0, Math.min(100, pct))}%`;
-      mouseLine.style.opacity = 1;
-    });
+      const clamped = Math.max(0, Math.min(100, pct));
 
-    wrap.addEventListener("mouseleave", () => {
-      mouseLine.style.opacity = 0;
-    });
+      // Update tampilan progress
+      progressRange.value = clamped;
+      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${clamped}%, rgba(200,200,200,0.15) ${clamped}%)`;
+
+      // Update waktu dan posisi preview
+      const duration = player.getDuration ? player.getDuration() : 0;
+      const seekTime = (clamped / 100) * duration;
+      previewTime.textContent = formatClock(seekTime);
+      preview.style.left = `${clamped}%`;
+      preview.style.display = "flex";
+
+      // Langsung loncat ke posisi
+      if (player && typeof player.seekTo === "function") {
+        player.seekTo(seekTime, true);
+      }
+    }
   }
 
   // === Full-frame click toggle Play/Pause (Desktop only) ===
@@ -1106,4 +1003,3 @@ document.addEventListener("DOMContentLoaded", () => {
     initAutoHideControls(); // auto-hide custom controls
   }, 1000);
 });
-
