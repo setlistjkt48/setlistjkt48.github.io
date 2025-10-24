@@ -638,6 +638,23 @@ footer {
   height: 100%;
 }
 
+.player-container,
+.player-container * {
+  user-select: none; /* ❌ Tidak bisa menyeleksi teks atau ikon */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.player-container {
+  outline: none; /* ❌ Hilangkan garis fokus */
+}
+
+.player-container:focus,
+.player-container:active {
+  outline: none; /* ❌ Tidak ada border fokus */
+}
+
 /* player iframe agar tidak tangkap klik */
 #player iframe {
   position: absolute;
