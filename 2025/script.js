@@ -238,7 +238,6 @@ function initCustomControls() {
 
   // --- (di dalam initCustomControls, setelah mengambil elemen progressRange & previewTime) ---
   const bufferBar = document.querySelector(".cust-progress-wrap .buffer-bar");
-  const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
 
   // make sure buffer fill exists (create once)
   let bufferFill = bufferBar.querySelector(".buffer-fill");
@@ -266,29 +265,6 @@ function initCustomControls() {
   // small interval to update buffer — lightweight
   setInterval(updateBuffer, 500); // cukup 0.5s
 
-  // rAF-driven preview positioning & mouse-line update
-  function schedulePreviewUpdate() {
-    if (rafPending) return;
-    rafPending = true;
-    requestAnimationFrame(() => {
-      rafPending = false;
-      // position preview and mouseLine given lastMousePct
-      const wrap = document.querySelector(".cust-progress-wrap");
-      const wrapRect = wrap.getBoundingClientRect();
-      const x =
-        (Math.max(0, Math.min(100, lastMousePct)) / 100) * wrapRect.width;
-      // position preview
-      preview.style.left = `${x}px`;
-      // mouse line width -> from start to mouse pos
-      mouseLine.style.width = `${Math.max(0, Math.min(100, lastMousePct))}%`;
-      mouseLine.style.opacity = 1;
-      // preview time based on pct
-      const newTime =
-        (lastMousePct / 100) * (player.getDuration ? player.getDuration() : 0);
-      previewTime.textContent = formatClock(newTime);
-    });
-  }
-
   // compute pct from event (clientX)
   function pctFromClientX(clientX) {
     const wrap = document.querySelector(".cust-progress-wrap");
@@ -296,31 +272,6 @@ function initCustomControls() {
     const px = clientX - wrapRect.left;
     return (px / wrapRect.width) * 100;
   }
-
-  // --- Hover / Mouse move (desktop) ---
-  progressRange.addEventListener("mousemove", (e) => {
-    // only desktop behavior (touch handled separately)
-    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
-    lastMousePct = Math.max(0, Math.min(100, pctFromClientX(e.clientX)));
-    preview.style.display = "flex";
-    // schedule rAF update
-    schedulePreviewUpdate();
-  });
-
-  // show preview on mouseenter
-  progressRange.addEventListener("mouseenter", () => {
-    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
-    preview.style.display = "flex";
-    mouseLine.style.opacity = 1;
-  });
-
-  // hide preview & mouse line on leave (if not dragging)
-  progressRange.addEventListener("mouseleave", () => {
-    if (!isDragging) {
-      preview.style.display = "none";
-      mouseLine.style.opacity = 0;
-    }
-  });
 
   // Keep existing periodic progress updater (which you already had) - it will keep progressRange.value in sync.
   // We only added buffer updates + hover improvements.
