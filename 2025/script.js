@@ -387,8 +387,7 @@ function initCustomControls() {
       // abaikan klik jika terjadi di control bar, progress bar, atau overlay gesture
       const isInControlArea =
         e.target.closest(".cust-controls") ||
-        e.target.closest(".cust-progress-wrap") ||
-        e.target.closest(".gesture-overlay");
+        e.target.closest(".cust-progress-wrap");
 
       if (isInControlArea) return; // jangan trigger play/pause di area itu
 
