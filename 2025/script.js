@@ -41,6 +41,18 @@ function onPlayerReady() {
   // === Cursor default sebelum video diputar ===
   playerContainer.style.cursor = "pointer";
 
+  // === Ubah cursor berdasarkan status video ===
+  player.addEventListener("onStateChange", (event) => {
+    const state = event.data;
+    if (state === YT.PlayerState.PLAYING) {
+      playerContainer.style.cursor = "default"; // hilangkan pointer saat sudah play
+    } else if (state === YT.PlayerState.PAUSED) {
+      playerContainer.style.cursor = "pointer"; // tampilkan pointer kalau pause
+    } else if (state === YT.PlayerState.ENDED) {
+      playerContainer.style.cursor = "pointer"; // setelah selesai tetap pointer
+    }
+  });
+
   // === Default line-up ===
   // Jika di desktop (layar >= 900px) => tampil
   // Jika di HP/tablet => tertutup
