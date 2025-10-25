@@ -743,11 +743,13 @@ function initGestureOverlay() {
     });
   } else {
     // === MODE DESKTOP ===
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) return; // abaikan di mode HP
+
     zoneLeft.style.pointerEvents = "all";
     zoneRight.style.pointerEvents = "all";
     zoneCenter.style.pointerEvents = "all";
 
-    // Simpan waktu klik terakhir untuk deteksi single vs double
     let lastClickTime = 0;
 
     overlay.addEventListener("click", (e) => {
@@ -762,9 +764,9 @@ function initGestureOverlay() {
           ? "right"
           : "center";
 
-      // --- Double click detection ---
+      // === Double click detection ===
       if (now - lastClickTime < 300) {
-        // Double click
+        // Double click detected
         if (zone === "right") {
           const newTime = Math.min(
             player.getDuration(),
@@ -777,26 +779,24 @@ function initGestureOverlay() {
           player.seekTo(newTime, true);
           showKeyboardIcon("-10s ⟲");
         }
-        lastClickTime = 0; // reset
+        lastClickTime = 0;
         return;
       }
 
-      // --- Single click (play/pause di tengah area) ---
+      // === Single click ===
       lastClickTime = now;
       setTimeout(() => {
-        // Jika tidak ada double click berikutnya
+        // Pastikan ini single click (bukan bagian dari double click)
         if (Date.now() - lastClickTime >= 300) {
-          if (zone === "center") {
-            const state = player.getPlayerState();
-            if (state === YT.PlayerState.PLAYING) {
-              player.pauseVideo();
-              showKeyboardIcon("❚❚");
-              updatePlayPauseIcons("paused");
-            } else {
-              player.playVideo();
-              showKeyboardIcon("▶");
-              updatePlayPauseIcons("playing");
-            }
+          const state = player.getPlayerState();
+          if (state === YT.PlayerState.PLAYING) {
+            player.pauseVideo();
+            showKeyboardIcon("❚❚");
+            updatePlayPauseIcons("paused");
+          } else {
+            player.playVideo();
+            showKeyboardIcon("▶");
+            updatePlayPauseIcons("playing");
           }
         }
       }, 310);
