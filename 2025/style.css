@@ -982,10 +982,10 @@ footer {
     top: 50%;
     height: 6px;
     transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.8);
     border-radius: 6px;
     width: 0%;
-    z-index: 2;
+    z-index: 5;
     pointer-events: none;
     opacity: 0;
     transition: width 0.05s linear, opacity 0.15s ease;
@@ -1063,3 +1063,4 @@ footer {
   -moz-user-select: none;
   -ms-user-select: none;
 }
+
