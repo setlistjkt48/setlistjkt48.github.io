@@ -38,18 +38,23 @@ function onPlayerReady() {
 
   const playerContainer = document.querySelector(".player-container");
 
-  // === Cursor default sebelum video diputar ===
+  // === Cursor pointer hanya sebelum video pertama kali diputar ===
   playerContainer.style.cursor = "pointer";
 
-  // === Ubah cursor berdasarkan status video ===
+  let hasPlayedOnce = false; // flag: apakah video sudah pernah diputar
+
   player.addEventListener("onStateChange", (event) => {
     const state = event.data;
-    if (state === YT.PlayerState.PLAYING) {
-      playerContainer.style.cursor = "default"; // hilangkan pointer saat sudah play
-    } else if (state === YT.PlayerState.PAUSED) {
-      playerContainer.style.cursor = "pointer"; // tampilkan pointer kalau pause
-    } else if (state === YT.PlayerState.ENDED) {
-      playerContainer.style.cursor = "pointer"; // setelah selesai tetap pointer
+
+    // Saat pertama kali video mulai play
+    if (state === YT.PlayerState.PLAYING && !hasPlayedOnce) {
+      hasPlayedOnce = true;
+      playerContainer.style.cursor = "default"; // ubah jadi normal
+    }
+
+    // Setelah pernah play, cursor tetap default di semua keadaan
+    if (hasPlayedOnce) {
+      playerContainer.style.cursor = "default";
     }
   });
 
