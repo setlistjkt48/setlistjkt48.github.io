@@ -951,12 +951,12 @@ footer {
   }
   .cust-progress-wrap .buffer-bar {
     position: absolute;
-    left: 6px; /* sedikit offset supaya tidak tertutup oleh rounded thumb di kiri */
-    right: 6px;
+    left: 0px; /* sedikit offset supaya tidak tertutup oleh rounded thumb di kiri */
+    right: 0px;
     height: 6px;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(200, 200, 200, 0.28); /* abu-abu terang */
+    background: rgba(100, 100, 100, 0.28); /* abu-abu terang */
     border-radius: 6px;
     z-index: 2;
     pointer-events: none;
