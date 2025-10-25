@@ -3,6 +3,7 @@ let currentIndex = 0;
 let expanded = false;
 let lastVolume = 100;
 let keyboardCooldown = false;
+let hasPlayedOnce = false; // global flag: video sudah pernah dimainkan?
 const keyboardCooldownDelay = 100; // jeda 100ms antar-tekan
 
 // === YouTube Player Setup ===
@@ -71,8 +72,6 @@ function startProgressUpdater() {
     timeDisplay.textContent = `${formatClock(current)} / ${formatClock(total)}`;
   }, 250);
 }
-
-let hasPlayedOnce = false; // global flag: video sudah pernah dimainkan?
 
 function onPlayerStateChange(event) {
   const playerContainer = document.querySelector(".player-container");
@@ -983,11 +982,9 @@ function updatePlayPauseIcons(state) {
   if (state === "playing") {
     if (playBtn) playBtn.textContent = "❚❚";
     showCenterIcon("pause");
-    playerContainer.style.cursor = "default";
   } else if (state === "paused") {
     if (playBtn) playBtn.textContent = "▶";
     showCenterIcon("play");
-    playerContainer.style.cursor = "default";
   }
 }
 
