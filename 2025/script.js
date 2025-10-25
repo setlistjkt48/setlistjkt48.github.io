@@ -38,26 +38,6 @@ function onPlayerReady() {
 
   const playerContainer = document.querySelector(".player-container");
 
-  // === Cursor pointer hanya sebelum video pertama kali diputar ===
-  playerContainer.style.cursor = "pointer";
-
-  let hasPlayedOnce = false; // flag: apakah video sudah pernah diputar
-
-  player.addEventListener("onStateChange", (event) => {
-    const state = event.data;
-
-    // Saat pertama kali video mulai play
-    if (state === YT.PlayerState.PLAYING && !hasPlayedOnce) {
-      hasPlayedOnce = true;
-      playerContainer.style.cursor = "default"; // ubah jadi normal
-    }
-
-    // Setelah pernah play, cursor tetap default di semua keadaan
-    if (hasPlayedOnce) {
-      playerContainer.style.cursor = "default";
-    }
-  });
-
   // === Default line-up ===
   // Jika di desktop (layar >= 900px) => tampil
   // Jika di HP/tablet => tertutup
@@ -92,10 +72,30 @@ function startProgressUpdater() {
   }, 250);
 }
 
+let hasPlayedOnce = false; // global flag: video sudah pernah dimainkan?
+
 function onPlayerStateChange(event) {
-  if (event.data === YT.PlayerState.ENDED) playNextVideo();
-  if (event.data === YT.PlayerState.PLAYING) updatePlayPauseIcons("playing");
-  if (event.data === YT.PlayerState.PAUSED) updatePlayPauseIcons("paused");
+  const playerContainer = document.querySelector(".player-container");
+  const state = event.data;
+
+  // === Logika cursor ===
+  if (!hasPlayedOnce && state !== YT.PlayerState.PLAYING) {
+    // sebelum pernah play → cursor pointer
+    playerContainer.style.cursor = "pointer";
+  } else {
+    // setelah pernah play → cursor normal
+    playerContainer.style.cursor = "default";
+  }
+
+  // saat pertama kali play, tandai sudah pernah dimainkan
+  if (state === YT.PlayerState.PLAYING && !hasPlayedOnce) {
+    hasPlayedOnce = true;
+  }
+
+  // === Logika event player lain tetap berjalan ===
+  if (state === YT.PlayerState.ENDED) playNextVideo();
+  if (state === YT.PlayerState.PLAYING) updatePlayPauseIcons("playing");
+  if (state === YT.PlayerState.PAUSED) updatePlayPauseIcons("paused");
 }
 
 /* =====================================================
