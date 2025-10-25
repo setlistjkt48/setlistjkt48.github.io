@@ -379,31 +379,6 @@ function initCustomControls() {
     }
   }
 
-  // === Full-frame click toggle Play/Pause (Desktop only) ===
-  if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    const playerContainer = document.querySelector(".player-container");
-
-    playerContainer.addEventListener("click", (e) => {
-      // abaikan klik jika terjadi di control bar, progress bar, atau overlay gesture
-      const isInControlArea =
-        e.target.closest(".cust-controls") ||
-        e.target.closest(".cust-progress-wrap");
-
-      if (isInControlArea) return; // jangan trigger play/pause di area itu
-
-      // toggle play / pause
-      if (!player) return;
-      const state = player.getPlayerState();
-      if (state === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-        updatePlayPauseIcons("paused");
-      } else {
-        player.playVideo();
-        updatePlayPauseIcons("playing");
-      }
-    });
-  }
-
   // Volume logic (fix restore volume)
   volRange.addEventListener("input", () => {
     const v = Number(volRange.value);
@@ -481,55 +456,6 @@ function initCustomControls() {
       const total = player.getDuration();
       if (total > 0) {
         timeDisplay.textContent = `0:00 / ${formatClock(total)}`;
-      }
-    });
-  }
-
-  // === Full-frame single click Play/Pause (Desktop + Mobile) ===
-  const playerContainer = document.querySelector(".player-container");
-  let lastClickTime = 0;
-
-  playerContainer.addEventListener("click", (e) => {
-    // Abaikan klik di area kontrol bawah atau progress bar
-    const inControl =
-      e.target.closest(".cust-controls") ||
-      e.target.closest(".cust-progress-wrap");
-
-    if (inControl) return;
-
-    // Cegah trigger dobel di HP (tap dua kali)
-    const now = Date.now();
-    if (now - lastClickTime < 350) return;
-    lastClickTime = now;
-
-    // Jalankan toggle play/pause
-    if (!player || typeof player.getPlayerState !== "function") return;
-    const state = player.getPlayerState();
-
-    if (state === YT.PlayerState.PLAYING) {
-      player.pauseVideo();
-      updatePlayPauseIcons("paused");
-      // ketika paused, tampilkan kembali pointer
-      playerContainer.style.cursor = "pointer";
-    } else {
-      player.playVideo();
-      updatePlayPauseIcons("playing");
-      // ketika sedang play, sembunyikan pointer
-      playerContainer.style.cursor = "default";
-    }
-  });
-
-  // === Set awal: pointer aktif sebelum video dimulai ===
-  playerContainer.style.cursor = "pointer";
-
-  // === Sinkronkan cursor saat status player berubah ===
-  if (player && typeof player.addEventListener === "function") {
-    player.addEventListener("onStateChange", (event) => {
-      const state = event.data;
-      if (state === YT.PlayerState.PLAYING) {
-        playerContainer.style.cursor = "default";
-      } else if (state === YT.PlayerState.PAUSED) {
-        playerContainer.style.cursor = "pointer";
       }
     });
   }
@@ -694,12 +620,25 @@ function initMobileControlBehavior() {
   let tapTimer = null;
   overlay.addEventListener("click", () => {
     if (tapTimer) clearTimeout(tapTimer);
+
+    // 1️⃣ Tambah class untuk animasi CSS
+    container.classList.add("mobile-showing");
+
+    // 2️⃣ Paksa tampilkan kontrol & progress wrap (agar langsung muncul)
+    const controls = container.querySelector(".cust-controls");
+    const progress = container.querySelector(".cust-progress-wrap");
+    if (controls) controls.style.opacity = "1";
+    if (progress) {
+      progress.style.bottom = "40px";
+      progress.style.opacity = "1";
+    }
+
+    // 3️⃣ Setelah 3 detik, sembunyikan lagi
     tapTimer = setTimeout(() => {
-      container.classList.add("mobile-showing");
-      setTimeout(() => {
-        container.classList.remove("mobile-showing");
-      }, 3000); // tampil selama 3 detik
-    }, 180);
+      container.classList.remove("mobile-showing");
+      if (controls) controls.style.opacity = "";
+      if (progress) progress.style.bottom = "";
+    }, 3000);
   });
 }
 
@@ -959,38 +898,6 @@ function updatePlayPauseIcons(state) {
     if (playBtn) playBtn.textContent = "▶";
     showCenterIcon("play");
     playerContainer.style.cursor = "pointer";
-  }
-
-  // === fungsi internal animasi ikon tengah (tanpa HTML tambahan) ===
-  function showCenterIcon(type) {
-    const icon = document.createElement("div");
-    icon.textContent = type === "play" ? "▶" : "❚❚";
-    Object.assign(icon.style, {
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%) scale(1.2)",
-      fontSize: "70px",
-      color: "rgba(255, 255, 255, 0.85)",
-      opacity: "0",
-      pointerEvents: "none",
-      transition: "opacity 0.25s ease, transform 0.25s ease",
-      zIndex: "999",
-    });
-    playerContainer.appendChild(icon);
-
-    // animasi fade-in
-    requestAnimationFrame(() => {
-      icon.style.opacity = "1";
-      icon.style.transform = "translate(-50%, -50%) scale(1)";
-    });
-
-    // hilangkan lagi setelah animasi
-    setTimeout(() => {
-      icon.style.opacity = "0";
-      icon.style.transform = "translate(-50%, -50%) scale(0.9)";
-      setTimeout(() => icon.remove(), 300);
-    }, 400);
   }
 }
 
