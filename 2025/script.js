@@ -370,30 +370,65 @@ function initCustomControls() {
     return (px / wrapRect.width) * 100;
   }
 
-  // --- Hover / Mouse move (desktop) ---
-  progressRange.addEventListener("mousemove", (e) => {
-    // only desktop behavior (touch handled separately)
-    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
-    lastMousePct = Math.max(0, Math.min(100, pctFromClientX(e.clientX)));
-    preview.style.display = "flex";
-    // schedule rAF update
-    schedulePreviewUpdate();
-  });
+  // === Hover Preview Time (Desktop Only) ===
+  if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    const progressWrap = document.querySelector(".cust-progress-wrap");
+    const bufferBar = document.querySelector(".cust-progress-wrap .buffer-bar");
+    const previewTime = document.getElementById("progressPreviewTime");
+    const preview = document.getElementById("progressPreview"); // elemen kecil yang menampilkan waktu
+    const rangeRect = progressRange.getBoundingClientRect();
 
-  // show preview on mouseenter
-  progressRange.addEventListener("mouseenter", () => {
-    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
-    preview.style.display = "flex";
-    mouseLine.style.opacity = 1;
-  });
+    let rafPending = false;
+    let lastMousePct = 0;
 
-  // hide preview & mouse line on leave (if not dragging)
-  progressRange.addEventListener("mouseleave", () => {
-    if (!isDragging) {
-      preview.style.display = "none";
-      mouseLine.style.opacity = 0;
+    // Hitung persentase posisi mouse di progress bar
+    function pctFromClientX(clientX) {
+      const rect = progressWrap.getBoundingClientRect();
+      const px = clientX - rect.left;
+      return Math.max(0, Math.min(100, (px / rect.width) * 100));
     }
-  });
+
+    // Update posisi preview waktu sesuai posisi mouse
+    function updatePreviewPosition(clientX) {
+      if (!player || typeof player.getDuration !== "function") return;
+      const pct = pctFromClientX(clientX);
+      const duration = player.getDuration();
+      const previewSec = (pct / 100) * duration;
+      const rect = progressWrap.getBoundingClientRect();
+      const x = (pct / 100) * rect.width;
+
+      // Posisi horizontal preview di tengah pointer mouse
+      preview.style.left = `${x}px`;
+      preview.style.transform = "translateX(-50%)";
+
+      // Posisi vertikal sedikit di atas progress bar
+      preview.style.bottom = `${rect.height + 10}px`;
+
+      // Update waktu tampilannya
+      previewTime.textContent = formatClock(previewSec);
+    }
+
+    // Tampilkan preview saat mouse masuk
+    progressWrap.addEventListener("mouseenter", (e) => {
+      preview.style.display = "flex";
+      updatePreviewPosition(e.clientX);
+    });
+
+    // Sembunyikan saat mouse keluar
+    progressWrap.addEventListener("mouseleave", () => {
+      preview.style.display = "none";
+    });
+
+    // Perbarui posisi & waktu saat mouse bergerak
+    progressWrap.addEventListener("mousemove", (e) => {
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        updatePreviewPosition(e.clientX);
+        rafPending = false;
+      });
+    });
+  }
 
   // Keep existing periodic progress updater (which you already had) - it will keep progressRange.value in sync.
   // We only added buffer updates + hover improvements.
@@ -614,21 +649,33 @@ function initCustomControls() {
     const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
 
     let hideTimeout = null;
+    let isIdle = false;
 
     function showControls() {
       controls.classList.add("visible");
       progressWrap.classList.add("visible");
       clearTimeout(hideTimeout);
+      isIdle = false;
     }
 
     function hideControls() {
+      // jangan sembunyikan kalau video paused
+      const st = player?.getPlayerState?.();
+      if (st === YT.PlayerState.PAUSED) return;
+
       controls.classList.remove("visible");
       progressWrap.classList.remove("visible");
+      isIdle = true;
     }
 
-    // Saat mouse masuk area video → tampilkan
-    playerContainer.addEventListener("mouseenter", () => {
+    // Saat mouse bergerak di dalam video → tampilkan kontrol dan reset timer
+    playerContainer.addEventListener("mousemove", () => {
       showControls();
+
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        hideControls();
+      }, 2000); // ⏱️ sembunyikan setelah 2 detik tanpa gerak
     });
 
     // Saat mouse keluar area video → sembunyikan cepat
@@ -636,10 +683,15 @@ function initCustomControls() {
       clearTimeout(hideTimeout);
       hideTimeout = setTimeout(() => {
         hideControls();
-      }, 800); // waktu delay sebelum hide (0.8 detik, seperti YouTube)
+      }, 500); // delay 0.5 detik saat keluar frame
     });
 
-    // === Sembunyikan garis hover (mouse-line) saat keluar progress bar ===
+    // Saat mouse masuk area video → tampilkan kembali
+    playerContainer.addEventListener("mouseenter", () => {
+      showControls();
+    });
+
+    // Sembunyikan garis hover (mouse-line) saat keluar progress bar
     progressWrap.addEventListener("mouseenter", () => {
       if (mouseLine) mouseLine.style.opacity = 1;
     });
