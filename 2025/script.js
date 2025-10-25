@@ -294,11 +294,8 @@ function initCustomControls() {
     }
   });
 
-  // --- (di dalam initCustomControls, setelah mengambil elemen progressRange & previewTime) ---
+  // --- Buffer Bar Update (Fixed Version) ---
   const bufferBar = document.querySelector(".cust-progress-wrap .buffer-bar");
-  const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
-
-  // make sure buffer fill exists (create once)
   let bufferFill = bufferBar.querySelector(".buffer-fill");
   if (!bufferFill) {
     bufferFill = document.createElement("div");
@@ -306,28 +303,41 @@ function initCustomControls() {
     bufferBar.appendChild(bufferFill);
   }
 
-  // rAF flag untuk mousemove / buffer updates
-  let rafPending = false;
-  let lastMousePct = 0;
-
-  // update buffer (YouTube) regularly but lightweight
+  // Update buffer menggunakan YT API dengan validasi tambahan
   function updateBuffer() {
-    // pastikan player siap dan fungsi tersedia
     if (!player || typeof player.getVideoLoadedFraction !== "function") return;
 
-    // panggil fungsi sekali saja
     let frac = player.getVideoLoadedFraction();
 
-    // YouTube kadang balikin 1 di awal sebelum load → filter kasus itu
-    if (!isFinite(frac) || frac <= 0) frac = 0;
-    if (frac > 0.999) frac = 1; // normalisasi agar tidak overflow
+    // --- Validasi tambahan ---
+    if (!isFinite(frac) || frac < 0) frac = 0;
+
+    // Saat belum start atau masih buffering awal, batasi 5%
+    const state = player.getPlayerState();
+    if (state === -1 || state === 3) {
+      frac = Math.min(frac, 0.05);
+    }
+
+    // Hindari full sebelum video selesai
+    if (frac > 0.999 && state !== YT.PlayerState.ENDED) {
+      frac = 0.999;
+    }
 
     const pct = frac * 100;
     bufferFill.style.width = pct + "%";
   }
 
-  // small interval to update buffer — lightweight
-  setInterval(updateBuffer, 250); // cukup 0.25s
+  // Jalankan update hanya saat video aktif
+  setInterval(() => {
+    const state = player?.getPlayerState?.();
+    if (
+      state === YT.PlayerState.BUFFERING ||
+      state === YT.PlayerState.PLAYING ||
+      state === YT.PlayerState.PAUSED
+    ) {
+      updateBuffer();
+    }
+  }, 500);
 
   // rAF-driven preview positioning & mouse-line update
   function schedulePreviewUpdate() {
