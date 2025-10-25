@@ -38,7 +38,10 @@ function onPlayerReady() {
 
   const playerContainer = document.querySelector(".player-container");
 
-    let hasPlayedOnce = false; // flag: apakah video sudah pernah diputar
+  // === Cursor pointer hanya sebelum video pertama kali diputar ===
+  playerContainer.style.cursor = "pointer";
+
+  let hasPlayedOnce = false; // flag: apakah video sudah pernah diputar
 
   player.addEventListener("onStateChange", (event) => {
     const state = event.data;
@@ -984,13 +987,7 @@ function updatePlayPauseIcons(state) {
   } else if (state === "paused") {
     if (playBtn) playBtn.textContent = "▶";
     showCenterIcon("play");
-
-    // tampilkan pointer hanya jika video belum pernah diputar
-    if (!hasPlayedOnce) {
-      playerContainer.style.cursor = "pointer";
-    } else {
-      playerContainer.style.cursor = "default";
-    }
+    playerContainer.style.cursor = "default";
   }
 }
 
