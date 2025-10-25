@@ -787,23 +787,10 @@ function initGestureOverlay() {
           : "center";
 
       // === Double click detection ===
-      if (now - lastClickTime < 300) {
-        // Double click detected
-        if (zone === "right") {
-          const newTime = Math.min(
-            player.getDuration(),
-            player.getCurrentTime() + 10
-          );
-          player.seekTo(newTime, true);
-          showKeyboardIcon("⟳ +10s");
-        } else if (zone === "left") {
-          const newTime = Math.max(0, player.getCurrentTime() - 10);
-          player.seekTo(newTime, true);
-          showKeyboardIcon("-10s ⟲");
-        }
-        lastClickTime = 0;
-        return;
-      }
+      overlay.addEventListener("dblclick", (e) => {
+        e.preventDefault();
+        toggleFullscreen();
+      });
 
       // === Single click ===
       lastClickTime = now;
