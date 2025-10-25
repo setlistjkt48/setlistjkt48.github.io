@@ -38,10 +38,7 @@ function onPlayerReady() {
 
   const playerContainer = document.querySelector(".player-container");
 
-  // === Cursor pointer hanya sebelum video pertama kali diputar ===
-  playerContainer.style.cursor = "pointer";
-
-  let hasPlayedOnce = false; // flag: apakah video sudah pernah diputar
+    let hasPlayedOnce = false; // flag: apakah video sudah pernah diputar
 
   player.addEventListener("onStateChange", (event) => {
     const state = event.data;
