@@ -298,12 +298,17 @@ function initCustomControls() {
 
   // update buffer (YouTube) regularly but lightweight
   function updateBuffer() {
+    // pastikan player siap dan fungsi tersedia
     if (!player || typeof player.getVideoLoadedFraction !== "function") return;
-    const frac = player.getVideoLoadedFraction
-      ? player.getVideoLoadedFraction()
-      : 0;
-    const pct = Math.max(0, Math.min(1, frac)) * 100;
-    // set width smoothly
+
+    // panggil fungsi sekali saja
+    let frac = player.getVideoLoadedFraction();
+
+    // YouTube kadang balikin 1 di awal sebelum load → filter kasus itu
+    if (!isFinite(frac) || frac <= 0) frac = 0;
+    if (frac > 0.999) frac = 1; // normalisasi agar tidak overflow
+
+    const pct = frac * 100;
     bufferFill.style.width = pct + "%";
   }
 
