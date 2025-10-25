@@ -36,6 +36,11 @@ function onPlayerReady() {
   loadLineup(0);
   updateActiveItem(0);
 
+  const playerContainer = document.querySelector(".player-container");
+
+  // === Cursor default sebelum video diputar ===
+  playerContainer.style.cursor = "pointer";
+
   // === Default line-up ===
   // Jika di desktop (layar >= 900px) => tampil
   // Jika di HP/tablet => tertutup
