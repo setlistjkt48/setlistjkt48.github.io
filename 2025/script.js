@@ -45,6 +45,29 @@ function onPlayerReady() {
     expanded = false;
   }
   updateVisibleMembers();
+
+  // ✅ Jalankan update progress setelah player siap
+  startProgressUpdater();
+}
+
+function startProgressUpdater() {
+  const progressRange = document.getElementById("progressRange");
+  const timeDisplay = document.getElementById("timeDisplay");
+
+  setInterval(() => {
+    if (!player || typeof player.getCurrentTime !== "function") return;
+
+    const total = player.getDuration();
+    const current = player.getCurrentTime();
+
+    if (isNaN(total) || total <= 0) return;
+
+    const pct = (current / total) * 100;
+    progressRange.value = pct;
+    progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${pct}%, rgba(200,200,200,0.15) ${pct}%)`;
+
+    timeDisplay.textContent = `${formatClock(current)} / ${formatClock(total)}`;
+  }, 250);
 }
 
 function onPlayerStateChange(event) {
