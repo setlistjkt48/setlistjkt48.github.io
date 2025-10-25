@@ -987,7 +987,13 @@ function updatePlayPauseIcons(state) {
   } else if (state === "paused") {
     if (playBtn) playBtn.textContent = "▶";
     showCenterIcon("play");
-    playerContainer.style.cursor = "pointer";
+
+    // tampilkan pointer hanya jika video belum pernah diputar
+    if (!hasPlayedOnce) {
+      playerContainer.style.cursor = "pointer";
+    } else {
+      playerContainer.style.cursor = "default";
+    }
   }
 }
 
