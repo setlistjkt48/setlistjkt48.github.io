@@ -39,6 +39,19 @@ function onPlayerReady() {
 
   const playerContainer = document.querySelector(".player-container");
 
+  // === Cursor hanya pointer saat hover di awal (belum pernah play) ===
+  playerContainer.addEventListener("mouseenter", () => {
+    if (!hasPlayedOnce) {
+      playerContainer.style.cursor = "pointer";
+    }
+  });
+
+  playerContainer.addEventListener("mouseleave", () => {
+    if (!hasPlayedOnce) {
+      playerContainer.style.cursor = "default";
+    }
+  });
+
   // === Default line-up ===
   // Jika di desktop (layar >= 900px) => tampil
   // Jika di HP/tablet => tertutup
@@ -77,21 +90,18 @@ function onPlayerStateChange(event) {
   const playerContainer = document.querySelector(".player-container");
   const state = event.data;
 
-  // === Logika cursor ===
-  if (!hasPlayedOnce && state !== YT.PlayerState.PLAYING) {
-    // sebelum pernah play → cursor pointer
-    playerContainer.style.cursor = "pointer";
-  } else {
-    // setelah pernah play → cursor normal
+  // Saat pertama kali video mulai play → ubah flag
+  if (state === YT.PlayerState.PLAYING && !hasPlayedOnce) {
+    hasPlayedOnce = true;
     playerContainer.style.cursor = "default";
   }
 
-  // saat pertama kali play, tandai sudah pernah dimainkan
-  if (state === YT.PlayerState.PLAYING && !hasPlayedOnce) {
-    hasPlayedOnce = true;
+  // Setelah video pernah diputar → cursor selalu default
+  if (hasPlayedOnce) {
+    playerContainer.style.cursor = "default";
   }
 
-  // === Logika event player lain tetap berjalan ===
+  // Event lainnya tetap
   if (state === YT.PlayerState.ENDED) playNextVideo();
   if (state === YT.PlayerState.PLAYING) updatePlayPauseIcons("playing");
   if (state === YT.PlayerState.PAUSED) updatePlayPauseIcons("paused");
