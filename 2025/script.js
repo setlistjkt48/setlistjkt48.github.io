@@ -777,43 +777,46 @@ function initGestureOverlay() {
     zoneRight.style.pointerEvents = "all";
     zoneCenter.style.pointerEvents = "all";
 
-    let lastClickTime = 0;
+    let clickTimer = null;
 
     overlay.addEventListener("click", (e) => {
-      const now = Date.now();
-      const rect = overlay.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const zoneWidth = rect.width / 3;
-      const zone =
-        x < zoneWidth
-          ? "left"
-          : x > rect.width - zoneWidth
-          ? "right"
-          : "center";
+      // Jangan langsung jalankan play/pause, tunggu sebentar untuk deteksi dblclick
+      if (clickTimer) clearTimeout(clickTimer);
 
-      // === Double click detection ===
-      overlay.addEventListener("dblclick", (e) => {
-        e.preventDefault();
-        toggleFullscreen();
-      });
+      clickTimer = setTimeout(() => {
+        // Hanya jalankan jika bukan bagian dari double click
+        const rect = overlay.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const zoneWidth = rect.width / 3;
 
-      // === Single click ===
-      lastClickTime = now;
-      setTimeout(() => {
-        // Pastikan ini single click (bukan bagian dari double click)
-        if (Date.now() - lastClickTime >= 300) {
-          const state = player.getPlayerState();
-          if (state === YT.PlayerState.PLAYING) {
-            player.pauseVideo();
-            showKeyboardIcon("❚❚");
-            updatePlayPauseIcons("paused");
-          } else {
-            player.playVideo();
-            showKeyboardIcon("▶");
-            updatePlayPauseIcons("playing");
-          }
+        const zone =
+          x < zoneWidth
+            ? "left"
+            : x > rect.width - zoneWidth
+            ? "right"
+            : "center";
+
+        const state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+          showKeyboardIcon("❚❚");
+          updatePlayPauseIcons("paused");
+        } else {
+          player.playVideo();
+          showKeyboardIcon("▶");
+          updatePlayPauseIcons("playing");
         }
-      }, 310);
+      }, 250); // tunggu 250ms sebelum dianggap single click
+    });
+
+    overlay.addEventListener("dblclick", (e) => {
+      e.preventDefault();
+      // Batalkan timer klik tunggal agar tidak memicu play/pause
+      if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+      }
+      toggleFullscreen();
     });
   }
 
