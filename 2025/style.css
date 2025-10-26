@@ -538,6 +538,12 @@ footer {
 
 /* responsive: small screens -> stack left controls and shrink sliders */
 @media (max-width: 720px) {
+  .left-controls {
+    gap: 1px;
+  }
+  .left-controls .ctrl-btn {
+    font-size: 20px;
+  }
   .volume-range {
     width: 60px;
   }
@@ -600,8 +606,9 @@ footer {
   width: 100%;
   height: 100%;
   display: flex;
-  z-index: 3;
-  pointer-events: all; /* overlay bisa diklik */
+  z-index: 9;
+  pointer-events: auto; /* overlay bisa diklik */
+  touch-action: manipulation; /* mencegah delay tap di mobile */
 }
 
 .gesture-zone {
@@ -629,6 +636,7 @@ footer {
   position: absolute;
   z-index: 10;
   width: 100%;
+  pointer-events: auto;
 }
 
 @media (max-width: 768px) {
@@ -741,7 +749,7 @@ footer {
 
   /* Saat video diputar: progress bar turun ke paling bawah */
   .player-container.mobile-playing .cust-progress-wrap {
-    bottom: 0px; /* menempel ke bawah */
+    bottom: -6px; /* menempel ke bawah */
     transition: bottom 0.3s ease;
   }
 
@@ -885,26 +893,6 @@ footer {
   .overlay-playpause-btn.show {
     animation: overlayFadeIn 0.25s ease-out;
   }
-}
-
-/* Saat video berjalan, control disembunyikan */
-.player-container.mobile-playing .cust-controls {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.player-container.mobile-playing .cust-progress-wrap {
-  bottom: 0px;
-}
-
-/* Saat pause, tampilkan kembali */
-.player-container.mobile-paused .cust-controls {
-  opacity: 1;
-  pointer-events: all;
-}
-
-.player-container.mobile-paused .cust-progress-wrap {
-  bottom: 40px;
 }
 
 /* ---------- Progress / Buffer / Hover (desktop-only) ---------- */
@@ -1108,6 +1096,9 @@ footer {
   .volume-overlay {
     display: none !important;
   }
+  .volume-range {
+    display: none !important;
+  }
 }
 
 /* Tombol kontrol utama */
@@ -1161,8 +1152,17 @@ footer {
     padding: 4px;
   }
 
+  .left-controls #btnPrev {
+    margin-left: -10px; /* jarak antara replay dan next */
+  }
+
+  .left-controls #btnNext {
+    margin-left: -15px; /* jarak antara replay dan next */
+  }
+
   .time-display {
     font-size: 12px;
+    margin-left: -10px;
   }
 }
 
