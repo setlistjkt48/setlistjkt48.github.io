@@ -489,21 +489,6 @@ footer {
   transform: translateY(-1px);
 }
 
-/* === Picture-in-Picture Button === */
-#btnPiP svg {
-  width: 32px;
-  height: 32px;
-  margin-left: 8px;
-  margin-right: -5px;
-  fill: rgba(255, 255, 255, 0.9);
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-#btnPiP:hover svg {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
 /* time display */
 .time-display {
   height: 12px;
