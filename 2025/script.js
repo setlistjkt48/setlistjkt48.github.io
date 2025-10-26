@@ -433,55 +433,74 @@ function initCustomControls() {
   // Keep existing periodic progress updater (which you already had) - it will keep progressRange.value in sync.
   // We only added buffer updates + hover improvements.
 
-  // === Smooth instant seek & drag (Desktop only) ===
-  if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    const progressWrap = document.querySelector(".cust-progress-wrap");
-    let isDragging = false;
+  // === Custom Progress Bar Control ===
+  let isDragging = false;
+  let wasPlaying = false;
 
-    progressWrap.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      isDragging = true;
-
-      // 🔥 Langsung ubah posisi dot ke titik mouse saat klik pertama
-      handleSeek(e);
-    });
-
-    document.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      handleSeek(e); // selama drag, dot mengikuti mouse
-    });
-
-    document.addEventListener("mouseup", (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      handleSeek(e); // pastikan posisi akhir benar
-      preview.style.display = "none";
-    });
-
-    // fungsi untuk menghitung posisi dan update tampilan
-    function handleSeek(e) {
-      const rect = progressWrap.getBoundingClientRect();
-      const pct = ((e.clientX - rect.left) / rect.width) * 100;
-      const clamped = Math.max(0, Math.min(100, pct));
-
-      // langsung pindahkan dot ke posisi mouse
-      progressRange.value = clamped;
-      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${clamped}%, rgba(200,200,200,0.15) ${clamped}%)`;
-
-      const duration = player.getDuration ? player.getDuration() : 0;
-      const seekTime = (clamped / 100) * duration;
-
-      // update preview waktu (opsional)
-      previewTime.textContent = formatClock(seekTime);
-      preview.style.left = `${clamped}%`;
-      preview.style.display = "flex";
-
-      // langsung seek video ke waktu baru (tanpa delay)
-      if (player && typeof player.seekTo === "function") {
-        player.seekTo(seekTime, true);
-      }
+  // Update progress UI dari waktu player
+  function updateProgressUI(current, duration) {
+    if (!isDragging && progressRange && duration > 0) {
+      const percent = (current / duration) * 100;
+      progressRange.value = percent;
+      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.9) ${percent}%, rgba(200,200,200,0.15) ${percent}%)`;
     }
   }
+
+  // Klik langsung di progress bar (bukan thumb)
+  progressRange.addEventListener("click", (e) => {
+    if (!player || !player.getDuration) return;
+    const rect = progressRange.getBoundingClientRect();
+    const clickPos = (e.clientX - rect.left) / rect.width;
+    const duration = player.getDuration();
+    const seekTime = clickPos * duration;
+
+    isDragging = true; // sementara tahan update
+    progressRange.value = clickPos * 100;
+    progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.9) ${
+      clickPos * 100
+    }%, rgba(200,200,200,0.15) ${clickPos * 100}%)`;
+    player.seekTo(seekTime, true);
+    isDragging = false; // langsung aktifkan kembali
+  });
+
+  // Saat mulai drag
+  progressRange.addEventListener("mousedown", () => {
+    if (!player) return;
+    isDragging = true;
+    wasPlaying = player.getPlayerState() === YT.PlayerState.PLAYING;
+    // pause sementara biar smooth
+    if (wasPlaying) player.pauseVideo();
+  });
+
+  // Saat dragging (gerak mouse sambil tekan)
+  progressRange.addEventListener("input", (e) => {
+    if (!player || !isDragging) return;
+    const percent = parseFloat(e.target.value);
+    progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.9) ${percent}%, rgba(200,200,200,0.15) ${percent}%)`;
+  });
+
+  // Saat lepas mouse
+  progressRange.addEventListener("mouseup", (e) => {
+    if (!player) return;
+    const percent = parseFloat(progressRange.value);
+    const duration = player.getDuration();
+    const seekTime = (percent / 100) * duration;
+
+    // langsung seek ke waktu baru tanpa fallback
+    player.seekTo(seekTime, true);
+
+    // aktifkan update UI kembali
+    isDragging = false;
+
+    if (wasPlaying) {
+      player.playVideo();
+    }
+  });
+
+  // Pastikan drag tidak terganggu oleh mouse keluar area
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
 
   // Volume logic (fix restore volume)
   volRange.addEventListener("input", () => {
@@ -1230,3 +1249,27 @@ document.addEventListener("DOMContentLoaded", () => {
     initAutoHideControls(); // auto-hide custom controls
   }, 1000);
 });
+
+// === Mouse-line Hover Indicator (Desktop Only) ===
+const progressWrap = document.querySelector(".cust-progress-wrap");
+const progressRange = document.getElementById("progressRange");
+const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
+
+if (progressWrap && progressRange && mouseLine) {
+  progressWrap.addEventListener("mousemove", (e) => {
+    // hanya aktif di desktop
+    if (window.innerWidth <= 900) return;
+
+    const rect = progressRange.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+    mouseLine.style.width = percent + "%";
+    mouseLine.style.opacity = 1;
+  });
+
+  progressWrap.addEventListener("mouseleave", () => {
+    // sembunyikan saat keluar area
+    mouseLine.style.opacity = 0;
+  });
+}
