@@ -40,6 +40,10 @@ function onPlayerReady() {
   loadLineup(0);
   updateActiveItem(0);
 
+  // tampilkan icon volume awal (desktop only)
+  const initialVolume = player.getVolume ? player.getVolume() : 100;
+  updateVolumeIcon(initialVolume);
+
   const playerContainer = document.querySelector(".player-container");
 
   // === Cursor hanya pointer saat hover di awal (belum pernah play) ===
@@ -265,6 +269,8 @@ function formatClock(seconds) {
 ===================================================== */
 function initCustomControls() {
   const playBtn = document.getElementById("btnPlayPause");
+  const prevBtn = document.getElementById("btnPrev");
+  const nextBtn = document.getElementById("btnNext");
   const timeDisplay = document.getElementById("timeDisplay");
   const progressRange = document.getElementById("progressRange");
   const preview = document.getElementById("progressPreview");
@@ -549,35 +555,113 @@ function initCustomControls() {
     });
   }
 
-  // Volume logic (fix restore volume)
+  // === Volume logic (SVG version) ===
   volRange.addEventListener("input", () => {
     const v = Number(volRange.value);
     player.setVolume(v);
+
     if (v === 0) {
       player.mute();
-      volBtn.textContent = "🔈";
     } else {
       player.unMute();
-      volBtn.textContent = "🔊";
       lastVolume = v;
     }
+
+    // ubah warna background bar
     volRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${v}%, rgba(200,200,200,0.15) ${v}%)`;
+
+    // tampilkan overlay volume + update ikon di control bar
+    showVolumeOverlay(v);
+    updateVolumeIcon(v);
   });
 
   volBtn.addEventListener("click", () => {
     if (player.isMuted && player.isMuted()) {
       player.unMute();
-      volBtn.textContent = "🔊";
       volRange.value = lastVolume;
       player.setVolume(lastVolume);
     } else {
       player.mute();
-      volBtn.textContent = "🔈";
       lastVolume = volRange.value;
       volRange.value = 0;
     }
+
     const v = Number(volRange.value);
     volRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${v}%, rgba(200,200,200,0.15) ${v}%)`;
+
+    // === Inline SVG icon (clean white YouTube style) ===
+    if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      let iconSVG = "";
+
+      if (v === 0) {
+        // mute
+        iconSVG = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="4 8 16 8" fill="rgba(255, 255, 255, 0.9)" width="30" height="30">
+          <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+          <path d="M16.5 12a4.5 4.5 0 0 1-1.32 3.18l-1.42-1.42A2.5 2.5 0 0 0 14.5 12a2.5 2.5 0 0 0-.74-1.76l1.42-1.42A4.5 4.5 0 0 1 16.5 12Z"/>
+          <path d="M19 12a7 7 0 0 1-2.05 4.95l-1.41-1.41A5 5 0 0 0 17 12a5 5 0 0 0-1.46-3.54l1.41-1.41A7 7 0 0 1 19 12Z"/>
+          <path d="M21.71 20.29 3.71 2.29a1 1 0 0 0-1.42 1.42l18 18a1 1 0 0 0 1.42-1.42Z"/>
+        </svg>
+      `;
+      } else if (v < 50) {
+        // low volume
+        iconSVG = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="4 8 16 8" fill="rgba(255, 255, 255, 0.9)" width="30" height="30">
+          <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+          <path d="M14.5 12a2.5 2.5 0 0 0-.74-1.76l1.42-1.42A4.5 4.5 0 0 1 16.5 12a4.5 4.5 0 0 1-1.32 3.18l-1.42-1.42A2.5 2.5 0 0 0 14.5 12Z"/>
+        </svg>
+      `;
+      } else {
+        // high volume
+        iconSVG = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="4 8 16 8" fill="rgba(255, 255, 255, 0.9)" width="30" height="30">
+          <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+          <path d="M14.5 12a2.5 2.5 0 0 0-.74-1.76l1.42-1.42A4.5 4.5 0 0 1 16.5 12a4.5 4.5 0 0 1-1.32 3.18l-1.42-1.42A2.5 2.5 0 0 0 14.5 12Z"/>
+          <path d="M19 12a7 7 0 0 1-2.05 4.95l-1.41-1.41A5 5 0 0 0 17 12a5 5 0 0 0-1.46-3.54l1.41-1.41A7 7 0 0 1 19 12Z"/>
+        </svg>
+      `;
+      }
+
+      volBtn.innerHTML = iconSVG;
+    }
+
+    // === Overlay volume di tengah layar (desktop only) ===
+    showVolumeOverlay(v);
+  });
+
+  // === Tombol Replay / Previous ===
+  let lastPrevClick = 0;
+  prevBtn.addEventListener("click", () => {
+    const now = Date.now();
+    const current = player.getCurrentTime();
+
+    // Tekan dua kali cepat → ke video sebelumnya
+    if (now - lastPrevClick < 400) {
+      const items = document.querySelectorAll(".playlist .item");
+      if (currentIndex > 0) {
+        currentIndex--;
+        const prevItem = items[currentIndex];
+        const prevVideoId = prevItem.getAttribute("data-video");
+        loadVideo(prevVideoId, currentIndex);
+      } else {
+        player.seekTo(0, true); // jika sudah paling awal, restart
+      }
+    } else {
+      // Tekan sekali → restart video
+      player.seekTo(0, true);
+    }
+    lastPrevClick = now;
+  });
+
+  // === Tombol Berikutnya ===
+  nextBtn.addEventListener("click", () => {
+    const items = document.querySelectorAll(".playlist .item");
+    if (currentIndex < items.length - 1) {
+      currentIndex++;
+      const nextItem = items[currentIndex];
+      const nextVideoId = nextItem.getAttribute("data-video");
+      loadVideo(nextVideoId, currentIndex);
+    }
   });
 
   // Fullscreen
@@ -586,6 +670,66 @@ function initCustomControls() {
     if (!document.fullscreenElement) container.requestFullscreen();
     else document.exitFullscreen();
   });
+
+  // === Picture-in-Picture ===
+  const btnPiP = document.getElementById("btnPiP");
+
+  if (btnPiP) {
+    btnPiP.addEventListener("click", async () => {
+      try {
+        // Ambil iframe dari YouTube Player
+        const iframe = player?.getIframe?.();
+        if (!iframe) return;
+
+        // Pastikan iframe punya izin PiP
+        iframe.setAttribute(
+          "allow",
+          "autoplay; fullscreen; picture-in-picture; encrypted-media"
+        );
+        iframe.setAttribute("allowfullscreen", "");
+
+        // Ambil video element dari dalam iframe (cross-origin bypass)
+        const video = await getYouTubeVideoElement(iframe);
+
+        if (!video) {
+          console.warn(
+            "Tidak bisa akses elemen video di YouTube iframe (dibatasi browser)."
+          );
+          alert(
+            "Browser kamu belum izinkan Picture-in-Picture otomatis. Gunakan klik kanan → Picture in Picture."
+          );
+          return;
+        }
+
+        // Toggle PiP
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else {
+          await video.requestPictureInPicture();
+        }
+      } catch (err) {
+        console.error("Gagal mengaktifkan PiP:", err);
+      }
+    });
+
+    // Ganti ikon saat masuk/keluar PiP
+    document.addEventListener("enterpictureinpicture", () => {
+      btnPiP.classList.add("active");
+    });
+    document.addEventListener("leavepictureinpicture", () => {
+      btnPiP.classList.remove("active");
+    });
+  }
+
+  // Helper — ambil video element di dalam YouTube iframe
+  async function getYouTubeVideoElement(iframe) {
+    try {
+      const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+      return innerDoc.querySelector("video");
+    } catch (e) {
+      return null; // jika cross-origin, tidak bisa diakses
+    }
+  }
 
   // === Format waktu otomatis jam:menit:detik ===
   function formatClock(sec) {
@@ -1047,7 +1191,7 @@ function initKeyboardControls() {
       case "f":
         e.preventDefault();
         toggleFullscreen();
-        showKeyboardIcon("⛶");
+        showKeyboardIcon("");
         break;
 
       // === Panah atas → volume naik 10% ===
@@ -1057,10 +1201,26 @@ function initKeyboardControls() {
           typeof player.getVolume === "function" &&
           typeof player.setVolume === "function"
         ) {
+          const volRange = document.getElementById("volumeRange");
           let vol = player.getVolume();
-          let newVol = Math.min(100, vol + 10);
+          let newVol = Math.min(100, vol + 5);
           player.setVolume(newVol);
+          player.unMute();
+
+          // update visual range bar
+          if (volRange) {
+            volRange.value = newVol;
+            volRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${newVol}%, rgba(200,200,200,0.15) ${newVol}%)`;
+          }
+
+          // update ikon di kontrol bawah
+          updateVolumeIcon(newVol);
+
+          // overlay tengah layar
           showVolumeOverlay(newVol);
+
+          // simpan volume terakhir
+          lastVolume = newVol;
         }
         break;
 
@@ -1071,10 +1231,86 @@ function initKeyboardControls() {
           typeof player.getVolume === "function" &&
           typeof player.setVolume === "function"
         ) {
+          const volRange = document.getElementById("volumeRange");
           let vol = player.getVolume();
-          let newVol = Math.max(0, vol - 10);
+          let newVol = Math.max(0, vol - 5);
           player.setVolume(newVol);
+
+          if (newVol === 0) player.mute();
+          else player.unMute();
+
+          // update visual range bar
+          if (volRange) {
+            volRange.value = newVol;
+            volRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${newVol}%, rgba(200,200,200,0.15) ${newVol}%)`;
+          }
+
+          // update ikon di kontrol bawah
+          updateVolumeIcon(newVol);
+
+          // overlay tengah layar
           showVolumeOverlay(newVol);
+
+          // simpan volume terakhir
+          lastVolume = newVol;
+        }
+        break;
+
+      // 🔇 Tombol M → mute/unmute
+      case "m":
+        e.preventDefault();
+        const volRange = document.getElementById("volumeRange");
+
+        if (!player || !volRange) return;
+
+        if (player.isMuted && player.isMuted()) {
+          // === UNMUTE ===
+          player.unMute();
+          const restoredVol = lastVolume > 0 ? lastVolume : 50;
+          player.setVolume(restoredVol);
+          volRange.value = restoredVol;
+
+          volRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${restoredVol}%, rgba(200,200,200,0.15) ${restoredVol}%)`;
+          updateVolumeIcon(restoredVol);
+          showVolumeOverlay(restoredVol);
+        } else {
+          // === MUTE ===
+          lastVolume = player.getVolume ? player.getVolume() : volRange.value;
+          player.mute();
+          volRange.value = 0;
+
+          volRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) 0%, rgba(200,200,200,0.15) 0%)`;
+          updateVolumeIcon(0);
+          showVolumeOverlay(0);
+        }
+        break;
+
+      // === Tombol 0 → Kembali ke awal video ===
+      case "0":
+        e.preventDefault();
+        if (player && typeof player.seekTo === "function") {
+          player.seekTo(0, true);
+          showKeyboardIcon("↺");
+        }
+        break;
+
+      // === SHIFT + N → Video Berikutnya ===
+      case "n":
+        if (e.shiftKey) {
+          e.preventDefault();
+          const nextBtn = document.getElementById("btnNext");
+          if (nextBtn) nextBtn.click();
+          showKeyboardIcon("⏭");
+        }
+        break;
+
+      // === SHIFT + P → Video Sebelumnya / Replay ===
+      case "p":
+        if (e.shiftKey) {
+          e.preventDefault();
+          const prevBtn = document.getElementById("btnPrev");
+          if (prevBtn) prevBtn.click();
+          showKeyboardIcon("⏮");
         }
         break;
     }
@@ -1112,6 +1348,65 @@ function showKeyboardIcon(symbol) {
 
   // hapus setelah 700ms
   setTimeout(() => indicator.remove(), 700);
+}
+
+/* ---------- Overlay Volume Indicator (Desktop Only, Full White Clean) ---------- */
+function showVolumeOverlay(volume) {
+  // hanya tampil di desktop
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+
+  const wrapper = document.querySelector(".video-wrapper");
+  if (!wrapper) return;
+
+  // hapus overlay sebelumnya biar tidak numpuk
+  let overlay = wrapper.querySelector("#volumeOverlay");
+  if (overlay) overlay.remove();
+
+  overlay = document.createElement("div");
+  overlay.id = "volumeOverlay";
+  overlay.className = "volume-overlay";
+
+  // pilih ikon SVG putih sesuai level volume
+  let iconSVG = "";
+  if (volume === 0) {
+    // 🔇 mute
+    iconSVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="rgba(255, 255, 255, 0.9)" width="70" height="70">
+        <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+        <path d="M16.5 12a4.5 4.5 0 0 1-1.32 3.18l-1.42-1.42A2.5 2.5 0 0 0 14.5 12a2.5 2.5 0 0 0-.74-1.76l1.42-1.42A4.5 4.5 0 0 1 16.5 12Z"/>
+        <path d="M19 12a7 7 0 0 1-2.05 4.95l-1.41-1.41A5 5 0 0 0 17 12a5 5 0 0 0-1.46-3.54l1.41-1.41A7 7 0 0 1 19 12Z"/>
+        <path d="M21.71 20.29 3.71 2.29a1 1 0 0 0-1.42 1.42l18 18a1 1 0 0 0 1.42-1.42Z"/>
+      </svg>
+    `;
+  } else if (volume < 50) {
+    // 🔈 low volume
+    iconSVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="rgba(255, 255, 255, 0.9)" width="70" height="70">
+        <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+        <path d="M14.5 12a2.5 2.5 0 0 0-.74-1.76l1.42-1.42A4.5 4.5 0 0 1 16.5 12a4.5 4.5 0 0 1-1.32 3.18l-1.42-1.42A2.5 2.5 0 0 0 14.5 12Z"/>
+      </svg>
+    `;
+  } else {
+    // 🔊 high volume
+    iconSVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="rgba(255, 255, 255, 0.9)" width="70" height="70">
+        <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+        <path d="M14.5 12a2.5 2.5 0 0 0-.74-1.76l1.42-1.42A4.5 4.5 0 0 1 16.5 12a4.5 4.5 0 0 1-1.32 3.18l-1.42-1.42A2.5 2.5 0 0 0 14.5 12Z"/>
+        <path d="M19 12a7 7 0 0 1-2.05 4.95l-1.41-1.41A5 5 0 0 0 17 12a5 5 0 0 0-1.46-3.54l1.41-1.41A7 7 0 0 1 19 12Z"/>
+      </svg>
+    `;
+  }
+
+  overlay.innerHTML = `
+    <div class="volume-icon">${iconSVG}</div>
+    <div class="volume-text">${volume}%</div>
+  `;
+
+  wrapper.appendChild(overlay);
+
+  // animasi fade in/out
+  requestAnimationFrame(() => overlay.classList.add("show"));
+  setTimeout(() => overlay.remove(), 900);
 }
 
 /* ---------- Toggle fullscreen universal (fix iPhone Safari) ---------- */
@@ -1322,4 +1617,62 @@ if (progressWrap && progressRange && mouseLine) {
     // sembunyikan saat keluar area
     mouseLine.style.opacity = 0;
   });
+}
+
+/* ---------- Update Icon Volume (Desktop Only) ---------- */
+function updateVolumeIcon(volume) {
+  const volBtn = document.getElementById("btnVolume");
+  if (!volBtn) return;
+
+  // hanya tampil di desktop
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+
+  let iconSVG = "";
+
+  if (volume === 0) {
+    // mute
+    iconSVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="4 8 16 8" 
+           fill="rgba(255, 255, 255, 0.9)" width="30" height="30">
+        <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+        <path d="M16.5 12a4.5 4.5 0 0 1-1.32 3.18l-1.42-1.42
+          A2.5 2.5 0 0 0 14.5 12a2.5 2.5 0 0 0-.74-1.76
+          l1.42-1.42A4.5 4.5 0 0 1 16.5 12Z"/>
+        <path d="M19 12a7 7 0 0 1-2.05 4.95
+          l-1.41-1.41A5 5 0 0 0 17 12
+          a5 5 0 0 0-1.46-3.54l1.41-1.41
+          A7 7 0 0 1 19 12Z"/>
+        <path d="M21.71 20.29 3.71 2.29
+          a1 1 0 0 0-1.42 1.42l18 18
+          a1 1 0 0 0 1.42-1.42Z"/>
+      </svg>`;
+  } else if (volume < 50) {
+    // low
+    iconSVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="4 8 16 8"
+           fill="rgba(255, 255, 255, 0.9)" width="30" height="30">
+        <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+        <path d="M14.5 12a2.5 2.5 0 0 0-.74-1.76
+          l1.42-1.42A4.5 4.5 0 0 1 16.5 12
+          a4.5 4.5 0 0 1-1.32 3.18
+          l-1.42-1.42A2.5 2.5 0 0 0 14.5 12Z"/>
+      </svg>`;
+  } else {
+    // high
+    iconSVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="4 8 16 8"
+           fill="rgba(255, 255, 255, 0.9)" width="30" height="30">
+        <path d="M4 9v6h4l5 5V4L8 9H4Z"/>
+        <path d="M14.5 12a2.5 2.5 0 0 0-.74-1.76
+          l1.42-1.42A4.5 4.5 0 0 1 16.5 12
+          a4.5 4.5 0 0 1-1.32 3.18
+          l-1.42-1.42A2.5 2.5 0 0 0 14.5 12Z"/>
+        <path d="M19 12a7 7 0 0 1-2.05 4.95
+          l-1.41-1.41A5 5 0 0 0 17 12
+          a5 5 0 0 0-1.46-3.54l1.41-1.41
+          A7 7 0 0 1 19 12Z"/>
+      </svg>`;
+  }
+
+  volBtn.innerHTML = iconSVG;
 }
