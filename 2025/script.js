@@ -124,35 +124,37 @@ function onPlayerStateChange(event) {
 /* =====================================================
    === Ganti Video / Playlist ===
 ===================================================== */
-function loadVideo(videoId, index = 0) {
-  if (!player) return;
+function loadVideo(videoId, index) {
+  if (!player || typeof player.loadVideoById !== "function") {
+    console.warn("Player belum siap, tunda load video...");
+    setTimeout(() => loadVideo(videoId, index), 300);
+    return;
+  }
 
   currentIndex = index;
 
-  try {
-    // Ganti video
-    player.loadVideoById(videoId);
+  console.log("▶️ Memuat video:", videoId);
 
-    // Coba auto-play (YouTube API kadang perlu waktu sedikit)
-    setTimeout(() => {
-      try {
-        player.playVideo();
-      } catch (err) {
-        console.warn("Autoplay mungkin diblokir:", err);
-      }
-    }, 200);
-  } catch (err) {
-    console.error("loadVideoById error:", err);
-  }
+  // Ganti video dan langsung play
+  player.loadVideoById(videoId);
 
-  // Update tampilan playlist
+  // Update tampilan playlist aktif
   updateActiveItem(index);
 
-  // Scroll playlist agar item aktif terlihat
-  const activeItem = document.querySelectorAll(".item")[index];
+  // Scroll agar item aktif terlihat
+  const activeItem = document.querySelectorAll(".playlist .item")[index];
   if (activeItem) {
     activeItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
+
+  // Pastikan langsung play (terkadang butuh delay kecil)
+  setTimeout(() => {
+    try {
+      player.playVideo();
+    } catch (err) {
+      console.warn("Autoplay mungkin diblokir:", err);
+    }
+  }, 300);
 }
 
 // === Ganti playlist YouTube ===
@@ -1718,4 +1720,30 @@ function updateVolumeIcon(volume) {
   }
 
   volBtn.innerHTML = iconSVG;
+}
+
+function goToNextVideo() {
+  const items = document.querySelectorAll(".playlist .item");
+  if (!items.length) return;
+
+  // kalau sudah di akhir, mulai dari awal lagi
+  currentIndex = (currentIndex + 1) % items.length;
+
+  const nextItem = items[currentIndex];
+  const nextVideoId = nextItem.getAttribute("data-video");
+
+  loadVideo(nextVideoId, currentIndex);
+}
+
+function goToPrevVideo() {
+  const items = document.querySelectorAll(".playlist .item");
+  if (!items.length) return;
+
+  // kalau di awal, kembali ke video terakhir
+  currentIndex = (currentIndex - 1 + items.length) % items.length;
+
+  const prevItem = items[currentIndex];
+  const prevVideoId = prevItem.getAttribute("data-video");
+
+  loadVideo(prevVideoId, currentIndex);
 }
