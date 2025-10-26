@@ -4,6 +4,9 @@ let expanded = false;
 let lastVolume = 100;
 let keyboardCooldown = false;
 let hasPlayedOnce = false; // global flag: video sudah pernah dimainkan?
+let isDragging = false;
+let wasPlaying = false;
+let pendingSeekTime = null;
 const keyboardCooldownDelay = 100; // jeda 100ms antar-tekan
 
 // === YouTube Player Setup ===
@@ -77,6 +80,13 @@ function startProgressUpdater() {
     const current = player.getCurrentTime();
 
     if (isNaN(total) || total <= 0) return;
+
+    // jika user sedang drag — jangan override posisi UI (hindari flicker)
+    if (isDragging) {
+      // tetap update time display optional (atau lewati kalau ingin tetap sesuai preview)
+      // timeDisplay.textContent = `${formatClock(current)} / ${formatClock(total)}`;
+      return;
+    }
 
     const pct = (current / total) * 100;
     progressRange.value = pct;
@@ -371,142 +381,167 @@ function initCustomControls() {
   }
 
   // === Hover Preview Time (Desktop Only) ===
+  // === Desktop: hover preview + click/drag seek (dot follows mouse ONLY when clicked/dragged) ===
   if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     const progressWrap = document.querySelector(".cust-progress-wrap");
-    const bufferBar = document.querySelector(".cust-progress-wrap .buffer-bar");
-    const previewTime = document.getElementById("progressPreviewTime");
-    const preview = document.getElementById("progressPreview"); // elemen kecil yang menampilkan waktu
-    const rangeRect = progressRange.getBoundingClientRect();
+    const preview = document.getElementById("progressPreview");
+    const previewTimeEl = document.getElementById("progressPreviewTime");
+    const mouseLine = document.querySelector(".cust-progress-wrap .mouse-line");
 
-    let rafPending = false;
-    let lastMousePct = 0;
-
-    // Hitung persentase posisi mouse di progress bar
-    function pctFromClientX(clientX) {
+    // convert clientX -> percentage (0..100)
+    function clientXToPct(clientX) {
       const rect = progressWrap.getBoundingClientRect();
-      const px = clientX - rect.left;
-      return Math.max(0, Math.min(100, (px / rect.width) * 100));
+      const pct = ((clientX - rect.left) / rect.width) * 100;
+      return Math.max(0, Math.min(100, pct));
     }
 
-    // Update posisi preview waktu sesuai posisi mouse
-    function updatePreviewPosition(clientX) {
-      if (!player || typeof player.getDuration !== "function") return;
-      const pct = pctFromClientX(clientX);
-      const duration = player.getDuration();
-      const previewSec = (pct / 100) * duration;
-      const rect = progressWrap.getBoundingClientRect();
-      const x = (pct / 100) * rect.width;
-
-      // Posisi horizontal preview di tengah pointer mouse
-      preview.style.left = `${x}px`;
-      preview.style.transform = "translateX(-50%)";
-
-      // Posisi vertikal sedikit di atas progress bar
-      preview.style.bottom = `${rect.height + 10}px`;
-
-      // Update waktu tampilannya
-      previewTime.textContent = formatClock(previewSec);
+    // update visual progress (dot) — digunakan hanya saat dragging
+    function updateUIForPct(clamped) {
+      progressRange.value = clamped;
+      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${clamped}%, rgba(200,200,200,0.15) ${clamped}%)`;
+      // preview bubble pos (jaga agar tidak keluar)
+      if (preview) preview.style.left = `${clamped}%`;
+      if (mouseLine) {
+        mouseLine.style.width = `${clamped}%`;
+        mouseLine.style.opacity = 1;
+      }
     }
 
-    // Tampilkan preview saat mouse masuk
-    progressWrap.addEventListener("mouseenter", (e) => {
-      preview.style.display = "flex";
-      updatePreviewPosition(e.clientX);
-    });
-
-    // Sembunyikan saat mouse keluar
-    progressWrap.addEventListener("mouseleave", () => {
-      preview.style.display = "none";
-    });
-
-    // Perbarui posisi & waktu saat mouse bergerak
+    // --- Hover behavior (show mouse-line & preview) but DO NOT move dot ---
     progressWrap.addEventListener("mousemove", (e) => {
-      if (rafPending) return;
-      rafPending = true;
-      requestAnimationFrame(() => {
-        updatePreviewPosition(e.clientX);
-        rafPending = false;
-      });
+      // always show hint on hover, but only update the dot when dragging
+      const pct = clientXToPct(e.clientX);
+      // show preview time & mouse-line as hover hint
+      if (mouseLine && !isDragging) {
+        // mouse-line as thin hint that doesn't move the actual thumb
+        mouseLine.style.width = `${pct}%`;
+        mouseLine.style.opacity = 1;
+      }
+
+      if (preview && !isDragging) {
+        const duration =
+          player && typeof player.getDuration === "function"
+            ? player.getDuration()
+            : 0;
+        const t = (pct / 100) * duration;
+        preview.style.display = "flex";
+        preview.style.left = `${pct}%`;
+        previewTimeEl.textContent = formatClock(t);
+      }
+
+      // If dragging -> update UI (dot) to follow mouse
+      if (isDragging) {
+        const duration =
+          player && typeof player.getDuration === "function"
+            ? player.getDuration()
+            : 0;
+        pendingSeekTime = (pct / 100) * duration;
+        updateUIForPct(pct);
+        if (preview) previewTimeEl.textContent = formatClock(pendingSeekTime);
+      }
+    });
+
+    // mouseenter -> show preview/mouse-line
+    progressWrap.addEventListener("mouseenter", (e) => {
+      const pct = clientXToPct(e.clientX);
+      if (mouseLine) {
+        mouseLine.style.width = `${pct}%`;
+        mouseLine.style.opacity = 1;
+      }
+      if (preview) {
+        preview.style.display = "flex";
+        preview.style.left = `${pct}%`;
+        const duration =
+          player && typeof player.getDuration === "function"
+            ? player.getDuration()
+            : 0;
+        previewTimeEl.textContent = formatClock((pct / 100) * duration);
+      }
+    });
+
+    // mouseleave -> hide preview/mouse-line if not dragging
+    progressWrap.addEventListener("mouseleave", () => {
+      if (!isDragging) {
+        if (mouseLine) mouseLine.style.opacity = 0;
+        if (preview) preview.style.display = "none";
+      }
+    });
+
+    // --- Mousedown: mulai drag -> pause video, set isDragging true ---
+    progressWrap.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      if (!player) return;
+      isDragging = true;
+      wasPlaying =
+        player.getPlayerState &&
+        player.getPlayerState() === YT.PlayerState.PLAYING;
+      if (wasPlaying && typeof player.pauseVideo === "function")
+        player.pauseVideo();
+
+      const pct = clientXToPct(e.clientX);
+      const duration =
+        player && typeof player.getDuration === "function"
+          ? player.getDuration()
+          : 0;
+      pendingSeekTime = (pct / 100) * duration;
+
+      updateUIForPct(pct);
+      if (preview) {
+        preview.style.display = "flex";
+        previewTimeEl.textContent = formatClock(pendingSeekTime);
+      }
+    });
+
+    // --- Mouseup (global): jika sedang drag -> seek sekali, restore play state ---
+    document.addEventListener("mouseup", (e) => {
+      // if wasn't dragging, just ensure hover UI hidden when leaving
+      if (!isDragging) {
+        // hide preview/mouseline if pointer is outside
+        if (mouseLine) mouseLine.style.opacity = 0;
+        if (preview) preview.style.display = "none";
+        pendingSeekTime = null;
+        return;
+      }
+
+      // finalize drag
+      isDragging = false;
+      if (
+        pendingSeekTime !== null &&
+        player &&
+        typeof player.seekTo === "function"
+      ) {
+        player.seekTo(pendingSeekTime, true);
+      }
+
+      if (preview) preview.style.display = "none";
+      if (mouseLine) mouseLine.style.opacity = 0;
+
+      // restore playback
+      if (wasPlaying && player && typeof player.playVideo === "function") {
+        player.playVideo();
+      }
+
+      pendingSeekTime = null;
+    });
+
+    // --- Click (single click) -> immediate seek (no dragging) ---
+    progressWrap.addEventListener("click", (e) => {
+      if (!player || typeof player.getDuration !== "function") return;
+      const pct = clientXToPct(e.clientX);
+      const duration = player.getDuration();
+      const seekTime = (pct / 100) * duration;
+
+      // immediate seek (click = jump)
+      if (typeof player.seekTo === "function") player.seekTo(seekTime, true);
+
+      // update visuals once (dot jumps to click pos)
+      updateUIForPct(pct);
+
+      // hide preview after click
+      if (preview) preview.style.display = "none";
+      if (mouseLine) mouseLine.style.opacity = 0;
     });
   }
-
-  // Keep existing periodic progress updater (which you already had) - it will keep progressRange.value in sync.
-  // We only added buffer updates + hover improvements.
-
-  // === Custom Progress Bar Control ===
-  let isDragging = false;
-  let wasPlaying = false;
-
-  // Update progress UI dari waktu player
-  function updateProgressUI(current, duration) {
-    if (!isDragging && progressRange && duration > 0) {
-      const percent = (current / duration) * 100;
-      progressRange.value = percent;
-      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.9) ${percent}%, rgba(200,200,200,0.15) ${percent}%)`;
-    }
-  }
-
-  // Klik langsung di progress bar (bukan thumb)
-  progressRange.addEventListener("click", (e) => {
-    if (!player || !player.getDuration) return;
-    const rect = progressRange.getBoundingClientRect();
-    const clickPos = (e.clientX - rect.left) / rect.width;
-    const duration = player.getDuration();
-    const seekTime = clickPos * duration;
-
-    isDragging = true;
-    player.seekTo(seekTime, true);
-    updateProgressUI(seekTime, duration);
-    setTimeout(() => (isDragging = false), 200); // beri delay agar stabil
-  });
-
-  // Saat mulai drag
-  progressRange.addEventListener("mousedown", () => {
-    if (!player) return;
-    isDragging = true;
-    wasPlaying = player.getPlayerState() === YT.PlayerState.PLAYING;
-    // pause sementara biar smooth
-    if (wasPlaying) player.pauseVideo();
-  });
-
-  // Saat dragging (gerak mouse sambil tekan)
-  progressRange.addEventListener("input", (e) => {
-    if (!player || !isDragging) return;
-    const percent = parseFloat(e.target.value);
-    progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.9) ${percent}%, rgba(200,200,200,0.15) ${percent}%)`;
-  });
-
-  // Saat lepas mouse
-  progressRange.addEventListener("mouseup", (e) => {
-    if (!player) return;
-    const percent = parseFloat(progressRange.value);
-    const duration = player.getDuration();
-    const seekTime = (percent / 100) * duration;
-
-    // langsung seek ke waktu baru tanpa fallback
-    player.seekTo(seekTime, true);
-
-    // aktifkan update UI kembali
-    isDragging = false;
-
-    if (wasPlaying) {
-      player.playVideo();
-    }
-  });
-
-  // Pastikan drag tidak terganggu oleh mouse keluar area
-  document.addEventListener("mouseup", () => {
-    isDragging = false;
-  });
-
-  // --- Update progress dari player setiap 250ms ---
-  setInterval(() => {
-    if (!player || typeof player.getCurrentTime !== "function" || isDragging)
-      return;
-    const current = player.getCurrentTime();
-    const duration = player.getDuration();
-    updateProgressUI(current, duration);
-  }, 250);
 
   // Volume logic (fix restore volume)
   volRange.addEventListener("input", () => {
