@@ -956,7 +956,7 @@ footer {
     height: 6px;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(100, 100, 100, 0.28); /* abu-abu terang */
+    background: rgba(100, 100, 100, 0.28); /* abu-abu gelap */
     border-radius: 6px;
     z-index: 2;
     pointer-events: none;
@@ -985,7 +985,7 @@ footer {
     background: rgba(255, 255, 255, 0.8);
     border-radius: 6px;
     width: 0%;
-    z-index: 5;
+    z-index: 1;
     pointer-events: none;
     opacity: 0;
     transition: width 0.05s linear, opacity 0.15s ease;
@@ -994,7 +994,7 @@ footer {
   /* agar input range tidak override cursor */
   .cust-progress-wrap .progress-range {
     cursor: pointer;
-    z-index: 2;
+    z-index: 3;
   }
 
   .cust-progress-wrap .progress-range:active {
@@ -1063,4 +1063,3 @@ footer {
   -moz-user-select: none;
   -ms-user-select: none;
 }
-
