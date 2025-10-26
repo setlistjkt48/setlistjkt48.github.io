@@ -383,7 +383,7 @@ footer {
   left: 0;
   right: 0;
   bottom: 40px; /* tepat di atas control bar */
-  height: 28px;
+  height: 48px;
   display: flex;
   align-items: center;
   pointer-events: auto;
@@ -478,7 +478,7 @@ footer {
   background: transparent;
   border: none;
   color: #fff;
-  font-size: 18px;
+  font-size: 30px;
   padding: 6px;
   cursor: pointer;
   border-radius: 6px;
@@ -489,8 +489,24 @@ footer {
   transform: translateY(-1px);
 }
 
+/* === Picture-in-Picture Button === */
+#btnPiP svg {
+  width: 32px;
+  height: 32px;
+  margin-left: 8px;
+  margin-right: -5px;
+  fill: rgba(255, 255, 255, 0.9);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+#btnPiP:hover svg {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
 /* time display */
 .time-display {
+  height: 12px;
   color: #eee;
   font-size: 13px;
   min-width: 120px;
@@ -505,8 +521,9 @@ footer {
 }
 
 .volume-range {
-  width: 80px;
-  height: 6px;
+  width: 100px;
+  height: 7px;
+  margin-bottom: -5px;
   -webkit-appearance: none;
   appearance: none;
   background: linear-gradient(
@@ -1073,40 +1090,32 @@ footer {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
   opacity: 0;
+  transition: all 0.25s ease;
   pointer-events: none;
-  transition: opacity 0.25s ease;
-  z-index: 120;
+  z-index: 8;
 }
 
 .volume-overlay.show {
   opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
-.volume-percent {
-  color: #fff;
+.volume-overlay svg {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
+}
+
+.volume-overlay .volume-text {
   font-size: 20px;
   font-weight: 600;
-  margin-bottom: 8px;
-  text-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
-}
-
-.volume-icon {
-  width: 60px;
-  height: 60px;
-  color: #fff;
-  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.6));
-}
-
-.volume-icon svg {
-  width: 100%;
-  height: 100%;
-  fill: currentColor;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 /* 🚫 Sembunyikan di mode HP/Tablet */
@@ -1114,4 +1123,80 @@ footer {
   .volume-overlay {
     display: none !important;
   }
+}
+
+/* Tombol kontrol utama */
+.cust-controls .ctrl-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  padding: 6px;
+}
+
+.cust-controls .ctrl-btn:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.cust-controls .ctrl-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: rgba(255, 255, 255, 0.9);
+  vertical-align: middle;
+}
+
+/* Tata letak kiri */
+.left-controls {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.left-controls #btnNext {
+  margin-left: -10px; /* jarak antara replay dan next */
+}
+
+/* Time display */
+.time-display {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-left: 5px;
+}
+
+/* --- Responsif di HP --- */
+@media (max-width: 768px) {
+  .cust-controls .ctrl-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cust-controls .ctrl-btn {
+    padding: 4px;
+  }
+
+  .time-display {
+    font-size: 12px;
+  }
+}
+
+/* --- FIX: perluas area klik progress bar ke atas & bawah --- */
+.cust-progress-wrap {
+  bottom: 40px;
+  height: 48px; /* tinggi visual */
+  z-index: 9999; /* pastikan di atas control */
+}
+
+/* buat layer klik transparan agar area lebih luas 20px ke atas & bawah */
+.cust-progress-wrap::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  background: transparent;
+  z-index: -1;
+  pointer-events: auto; /* aktif tangkap klik */
 }
