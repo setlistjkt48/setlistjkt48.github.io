@@ -125,23 +125,33 @@ function onPlayerStateChange(event) {
    === Ganti Video / Playlist ===
 ===================================================== */
 function loadVideo(videoId, index = 0) {
+  if (!player) return;
+
   currentIndex = index;
-  if (player && typeof player.loadVideoById === "function") {
+
+  try {
+    // Ganti video
     player.loadVideoById(videoId);
-    loadLineup(index);
-    updateActiveItem(index);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  } else {
-    // jika player belum siap
-    const wait = setInterval(() => {
-      if (player && typeof player.loadVideoById === "function") {
-        clearInterval(wait);
-        player.loadVideoById(videoId);
-        loadLineup(index);
-        updateActiveItem(index);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Coba auto-play (YouTube API kadang perlu waktu sedikit)
+    setTimeout(() => {
+      try {
+        player.playVideo();
+      } catch (err) {
+        console.warn("Autoplay mungkin diblokir:", err);
       }
-    }, 500);
+    }, 200);
+  } catch (err) {
+    console.error("loadVideoById error:", err);
+  }
+
+  // Update tampilan playlist
+  updateActiveItem(index);
+
+  // Scroll playlist agar item aktif terlihat
+  const activeItem = document.querySelectorAll(".item")[index];
+  if (activeItem) {
+    activeItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 }
 
@@ -635,21 +645,28 @@ function initCustomControls() {
     const now = Date.now();
     const current = player.getCurrentTime();
 
+    const items = document.querySelectorAll(".playlist .item");
+
     // Tekan dua kali cepat → ke video sebelumnya
     if (now - lastPrevClick < 400) {
-      const items = document.querySelectorAll(".playlist .item");
       if (currentIndex > 0) {
         currentIndex--;
-        const prevItem = items[currentIndex];
-        const prevVideoId = prevItem.getAttribute("data-video");
-        loadVideo(prevVideoId, currentIndex);
       } else {
-        player.seekTo(0, true); // jika sudah paling awal, restart
+        // kalau sudah di awal, lompat ke video terakhir (opsional)
+        currentIndex = items.length - 1;
       }
+      const prevItem = items[currentIndex];
+      const prevVideoId = prevItem.getAttribute("data-video");
+      loadVideo(prevVideoId, currentIndex);
+
+      // pastikan langsung play
+      setTimeout(() => player?.playVideo?.(), 200);
+      updateActiveItem(currentIndex);
     } else {
       // Tekan sekali → restart video
       player.seekTo(0, true);
     }
+
     lastPrevClick = now;
   });
 
@@ -658,10 +675,18 @@ function initCustomControls() {
     const items = document.querySelectorAll(".playlist .item");
     if (currentIndex < items.length - 1) {
       currentIndex++;
-      const nextItem = items[currentIndex];
-      const nextVideoId = nextItem.getAttribute("data-video");
-      loadVideo(nextVideoId, currentIndex);
+    } else {
+      // kalau di akhir, ulang ke awal (opsional)
+      currentIndex = 0;
     }
+
+    const nextItem = items[currentIndex];
+    const nextVideoId = nextItem.getAttribute("data-video");
+    loadVideo(nextVideoId, currentIndex);
+
+    // pastikan langsung play
+    setTimeout(() => player?.playVideo?.(), 200);
+    updateActiveItem(currentIndex);
   });
 
   // Fullscreen
@@ -670,56 +695,6 @@ function initCustomControls() {
     if (!document.fullscreenElement) container.requestFullscreen();
     else document.exitFullscreen();
   });
-
-  // === Picture-in-Picture ===
-  const btnPiP = document.getElementById("btnPiP");
-
-  if (btnPiP) {
-    btnPiP.addEventListener("click", async () => {
-      try {
-        // Ambil iframe dari YouTube Player
-        const iframe = player?.getIframe?.();
-        if (!iframe) return;
-
-        // Pastikan iframe punya izin PiP
-        iframe.setAttribute(
-          "allow",
-          "autoplay; fullscreen; picture-in-picture; encrypted-media"
-        );
-        iframe.setAttribute("allowfullscreen", "");
-
-        // Ambil video element dari dalam iframe (cross-origin bypass)
-        const video = await getYouTubeVideoElement(iframe);
-
-        if (!video) {
-          console.warn(
-            "Tidak bisa akses elemen video di YouTube iframe (dibatasi browser)."
-          );
-          alert(
-            "Browser kamu belum izinkan Picture-in-Picture otomatis. Gunakan klik kanan → Picture in Picture."
-          );
-          return;
-        }
-
-        // Toggle PiP
-        if (document.pictureInPictureElement) {
-          await document.exitPictureInPicture();
-        } else {
-          await video.requestPictureInPicture();
-        }
-      } catch (err) {
-        console.error("Gagal mengaktifkan PiP:", err);
-      }
-    });
-
-    // Ganti ikon saat masuk/keluar PiP
-    document.addEventListener("enterpictureinpicture", () => {
-      btnPiP.classList.add("active");
-    });
-    document.addEventListener("leavepictureinpicture", () => {
-      btnPiP.classList.remove("active");
-    });
-  }
 
   // Helper — ambil video element di dalam YouTube iframe
   async function getYouTubeVideoElement(iframe) {
@@ -1179,13 +1154,13 @@ function initKeyboardControls() {
       case "arrowright":
         e.preventDefault();
         player.seekTo(player.getCurrentTime() + 10, true);
-        showKeyboardIcon("⟳ +10s");
+        showKeyboardIcon("⟳ +10s", "right");
         break;
 
       case "arrowleft":
         e.preventDefault();
         player.seekTo(Math.max(0, player.getCurrentTime() - 10), true);
-        showKeyboardIcon("-10s ⟲");
+        showKeyboardIcon("-10s ⟲", "left");
         break;
 
       case "f":
@@ -1295,12 +1270,34 @@ function initKeyboardControls() {
         break;
 
       // === SHIFT + N → Video Berikutnya ===
+      // === SHIFT + N → Video Berikutnya ===
       case "n":
         if (e.shiftKey) {
           e.preventDefault();
-          const nextBtn = document.getElementById("btnNext");
-          if (nextBtn) nextBtn.click();
-          showKeyboardIcon("⏭");
+
+          const items = document.querySelectorAll(".playlist .item");
+          if (!items.length) break;
+
+          // hitung indeks berikutnya (loop ke awal jika sudah di akhir)
+          currentIndex = (currentIndex + 1) % items.length;
+
+          const nextItem = items[currentIndex];
+          const nextVideoId = nextItem.getAttribute("data-video");
+
+          // ganti video dan update UI
+          loadVideo(nextVideoId, currentIndex);
+          updateActiveItem(currentIndex);
+
+          // paksa auto-play
+          setTimeout(() => player?.playVideo?.(), 200);
+
+          // tampilkan ikon "Next"
+          const svgNext = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" width="90" height="90" fill="white" aria-hidden="true">
+        <path d="M7 6v12l8.5-6L7 6zM16 6v12h2V6h-2z"/>
+      </svg>
+    `;
+          showKeyboardIcon(svgNext, "center");
         }
         break;
 
@@ -1308,9 +1305,30 @@ function initKeyboardControls() {
       case "p":
         if (e.shiftKey) {
           e.preventDefault();
-          const prevBtn = document.getElementById("btnPrev");
-          if (prevBtn) prevBtn.click();
-          showKeyboardIcon("⏮");
+
+          const items = document.querySelectorAll(".playlist .item");
+          if (!items.length) break;
+
+          // hitung indeks sebelumnya (loop ke akhir jika di awal)
+          currentIndex = (currentIndex - 1 + items.length) % items.length;
+
+          const prevItem = items[currentIndex];
+          const prevVideoId = prevItem.getAttribute("data-video");
+
+          // ganti video dan update UI
+          loadVideo(prevVideoId, currentIndex);
+          updateActiveItem(currentIndex);
+
+          // paksa auto-play
+          setTimeout(() => player?.playVideo?.(), 200);
+
+          // tampilkan ikon "Replay" (mirror dari Next)
+          const svgReplay = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 20" width="90" height="90" fill="white" aria-hidden="true">
+        <path d="M17 6v12l-8.5-6L17 6zM6 6v12h2V6H6z"/>
+      </svg>
+    `;
+          showKeyboardIcon(svgReplay, "center");
         }
         break;
     }
@@ -1318,19 +1336,44 @@ function initKeyboardControls() {
 }
 
 /* ---------- Helper tampilkan animasi icon keyboard di posisi berbeda ---------- */
-function showKeyboardIcon(symbol) {
+function showKeyboardIcon(content, position = "center") {
   const wrapper = document.querySelector(".video-wrapper");
   if (!wrapper) return;
 
-  // jika sudah ada indicator sebelumnya, hapus dulu biar bersih
+  // hapus indicator lama kalau ada
   let indicator = wrapper.querySelector("#keyboardIndicator");
   if (indicator) indicator.remove();
 
-  // buat ulang elemen indicator
+  // buat elemen baru
   indicator = document.createElement("div");
   indicator.id = "keyboardIndicator";
-  indicator.textContent = symbol;
+
+  // set posisi (kelas css .left/.right/.center sudah ada)
+  indicator.classList.add(position);
+
+  // kalau string berisi tag HTML (mis. "<svg") -> pakai innerHTML
+  // otherwise pakai textContent agar aman
+  const looksLikeHTML = /<[^>]+>/.test(content);
+  if (looksLikeHTML) {
+    indicator.innerHTML = content;
+  } else {
+    indicator.textContent = content;
+  }
+
+  // styling dasar (jika perlu override)
+  indicator.style.pointerEvents = "none";
+
   wrapper.appendChild(indicator);
+
+  // trigger animasi (CSS sudah mendefinisikan .show)
+  requestAnimationFrame(() => {
+    indicator.classList.add("show");
+  });
+
+  // hapus setelah 700ms
+  setTimeout(() => {
+    if (indicator && indicator.parentNode) indicator.remove();
+  }, 700);
 
   // posisi berdasarkan jenis simbol
   if (symbol === "⟳ +10s") {
