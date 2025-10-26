@@ -1263,65 +1263,9 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(initMobileOverlayPlayPause, 1000);
 });
 
-/* =====================================================
-   === AUTO HIDE Custom Controls & Progress Bar ===
-===================================================== */
-function initAutoHideControls() {
-  const container = document.querySelector(".player-container");
-  const controls = container.querySelector(".cust-controls");
-  const progressWrap = container.querySelector(".cust-progress-wrap");
-  if (!container || !controls || !progressWrap) return;
-
-  let hideTimer = null;
-  let isHidden = false;
-
-  function showControls() {
-    if (isHidden) {
-      controls.classList.add("show");
-      progressWrap.classList.add("show");
-      controls.classList.remove("hidden");
-      progressWrap.classList.remove("hidden");
-      isHidden = false;
-    }
-    if (hideTimer) clearTimeout(hideTimer);
-    // sembunyikan lagi setelah 2 detik jika video sedang play
-    hideTimer = setTimeout(() => {
-      const st = player.getPlayerState();
-      if (st === YT.PlayerState.PLAYING) hideControls();
-    }, 3000);
-  }
-
-  function hideControls() {
-    controls.classList.remove("show");
-    progressWrap.classList.remove("show");
-    controls.classList.add("hidden");
-    progressWrap.classList.add("hidden");
-    isHidden = true;
-  }
-
-  // tampilkan kembali saat interaksi
-  ["mousemove", "click", "touchstart"].forEach((evt) => {
-    document.addEventListener(evt, showControls);
-  });
-
-  // tetap tampil kalau video paused
-  const observer = setInterval(() => {
-    if (!player || typeof player.getPlayerState !== "function") return;
-    const st = player.getPlayerState();
-    if (st === YT.PlayerState.PAUSED) {
-      showControls();
-      if (hideTimer) clearTimeout(hideTimer);
-    }
-  }, 500);
-
-  // awalnya tampil
-  showControls();
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     initMobileOverlayPlayPause(); // overlay play/pause
-    initAutoHideControls(); // auto-hide custom controls
   }, 1000);
 });
 
