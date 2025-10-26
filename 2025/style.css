@@ -1068,7 +1068,7 @@ footer {
   -ms-user-select: none;
 }
 
-/* ================== Volume overlay (desktop only) ================== */
+/* ==================== Volume Overlay (Desktop Only) ==================== */
 .volume-overlay {
   position: absolute;
   top: 50%;
@@ -1080,7 +1080,7 @@ footer {
   justify-content: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.22s ease;
+  transition: opacity 0.25s ease;
   z-index: 120;
 }
 
@@ -1088,24 +1088,28 @@ footer {
   opacity: 1;
 }
 
-/* teks persentase */
 .volume-percent {
   color: #fff;
   font-size: 20px;
   font-weight: 600;
-  text-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
   margin-bottom: 8px;
-  line-height: 1;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
 }
 
-/* ikon */
 .volume-icon {
-  font-size: 44px;
-  line-height: 1;
-  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.6));
+  width: 60px;
+  height: 60px;
+  color: #fff;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.6));
 }
 
-/* disable overlay di perangkat mobile / tablet */
+.volume-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+/* 🚫 Sembunyikan di mode HP/Tablet */
 @media (max-width: 768px) {
   .volume-overlay {
     display: none !important;
