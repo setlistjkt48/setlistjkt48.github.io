@@ -641,54 +641,80 @@ function initCustomControls() {
     showVolumeOverlay(v);
   });
 
-  // === Tombol Replay / Previous ===
-  let lastPrevClick = 0;
+  // === Tombol Replay / Previous (Smart Behavior seperti YouTube, batas 2 detik) ===
   prevBtn.addEventListener("click", () => {
-    const now = Date.now();
-    const current = player.getCurrentTime();
-
     const items = document.querySelectorAll(".playlist .item");
+    if (!items.length) return;
 
-    // Tekan dua kali cepat → ke video sebelumnya
-    if (now - lastPrevClick < 400) {
+    const currentTime = player?.getCurrentTime?.() || 0;
+
+    if (currentTime > 2) {
+      // Jika sudah lewat 2 detik, restart video ini
+      player.seekTo(0, true);
+    } else {
+      // Jika masih di awal (<= 2 detik), pindah ke video sebelumnya
       if (currentIndex > 0) {
         currentIndex--;
       } else {
-        // kalau sudah di awal, lompat ke video terakhir (opsional)
+        // Jika sudah di video pertama, lompat ke terakhir (opsional)
         currentIndex = items.length - 1;
       }
+
       const prevItem = items[currentIndex];
-      const prevVideoId = prevItem.getAttribute("data-video");
-      loadVideo(prevVideoId, currentIndex);
 
-      // pastikan langsung play
-      setTimeout(() => player?.playVideo?.(), 200);
-      updateActiveItem(currentIndex);
-    } else {
-      // Tekan sekali → restart video
-      player.seekTo(0, true);
+      // Ambil videoId dari data-video (atau fallback dari onclick)
+      const prevVideoId =
+        prevItem.getAttribute("data-video") ||
+        (prevItem.getAttribute("onclick")?.match(/loadVideo\(['"]([^'"]+)['"]/)
+          ? prevItem
+              .getAttribute("onclick")
+              .match(/loadVideo\(['"]([^'"]+)['"]/)[1]
+          : null);
+
+      if (prevVideoId) {
+        loadVideo(prevVideoId, currentIndex);
+        // Pastikan langsung play
+        setTimeout(() => player?.playVideo?.(), 200);
+        updateActiveItem(currentIndex);
+      } else {
+        console.warn(
+          "❌ Tidak menemukan videoId pada item index",
+          currentIndex
+        );
+      }
     }
-
-    lastPrevClick = now;
   });
 
   // === Tombol Berikutnya ===
   nextBtn.addEventListener("click", () => {
     const items = document.querySelectorAll(".playlist .item");
+    if (!items.length) return;
+
     if (currentIndex < items.length - 1) {
       currentIndex++;
     } else {
-      // kalau di akhir, ulang ke awal (opsional)
+      // Kalau di akhir, kembali ke awal (opsional)
       currentIndex = 0;
     }
 
     const nextItem = items[currentIndex];
-    const nextVideoId = nextItem.getAttribute("data-video");
-    loadVideo(nextVideoId, currentIndex);
 
-    // pastikan langsung play
-    setTimeout(() => player?.playVideo?.(), 200);
-    updateActiveItem(currentIndex);
+    // Ambil videoId dari data-video (atau fallback dari onclick)
+    const nextVideoId =
+      nextItem.getAttribute("data-video") ||
+      (nextItem.getAttribute("onclick")?.match(/loadVideo\(['"]([^'"]+)['"]/)
+        ? nextItem
+            .getAttribute("onclick")
+            .match(/loadVideo\(['"]([^'"]+)['"]/)[1]
+        : null);
+
+    if (nextVideoId) {
+      loadVideo(nextVideoId, currentIndex);
+      setTimeout(() => player?.playVideo?.(), 200);
+      updateActiveItem(currentIndex);
+    } else {
+      console.warn("❌ Tidak menemukan videoId pada item index", currentIndex);
+    }
   });
 
   // Fullscreen
