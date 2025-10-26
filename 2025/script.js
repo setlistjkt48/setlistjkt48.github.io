@@ -777,81 +777,56 @@ function initCustomControls() {
     });
   }
 
-  // === Perluas area drag progress di mode HP (posisi adaptif) ===
+  // === MODE HP: Drag & Tap Progress Sama Seperti Desktop ===
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     const progressWrap = document.querySelector(".cust-progress-wrap");
-    if (progressWrap) {
-      // buat layer baru di BODY (tetap aktif)
-      const touchLayer = document.createElement("div");
-      touchLayer.style.position = "fixed";
-      touchLayer.style.left = "0";
-      touchLayer.style.width = "100%";
-      touchLayer.style.zIndex = 9999;
-      touchLayer.style.background = "transparent";
-      touchLayer.style.touchAction = "none";
-      touchLayer.style.pointerEvents = "auto";
-      document.body.appendChild(touchLayer);
+    const progressRange = document.getElementById("progressRange");
+    if (!progressWrap || !progressRange) return;
 
-      // fungsi untuk memperbarui posisi touchLayer mengikuti progress bar
-      function updateTouchLayerPosition() {
-        const rect = progressWrap.getBoundingClientRect();
-        touchLayer.style.left = `${rect.left}px`;
-        touchLayer.style.width = `${rect.width}px`;
-        touchLayer.style.top = `${rect.top - 30}px`; // 30px ke atas
-        touchLayer.style.height = `${rect.height + 35}px`; // +30 atas, +5 bawah
-      }
+    let isTouchDragging = false;
 
-      // panggil pertama kali & setiap waktu tertentu
-      updateTouchLayerPosition();
-      const intervalId = setInterval(updateTouchLayerPosition, 250);
-
-      // juga update saat rotasi / resize
-      window.addEventListener("resize", updateTouchLayerPosition);
-      window.addEventListener("orientationchange", updateTouchLayerPosition);
-
-      // === blokir click default ke bawah ===
-      ["mousedown", "click", "touchstart"].forEach((ev) => {
-        touchLayer.addEventListener(ev, (e) => e.preventDefault(), true);
-      });
-
-      // === drag logika manual ===
-      let isTouchDragging = false;
-      let startX = 0;
-      let startValue = 0;
-
-      touchLayer.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        isTouchDragging = true;
-        startX = e.touches[0].clientX;
-        startValue = Number(progressRange.value);
-      });
-
-      touchLayer.addEventListener("touchmove", (e) => {
-        if (!isTouchDragging) return;
-        e.preventDefault();
-        const dx = e.touches[0].clientX - startX;
-        const percentDelta = (dx / progressRange.offsetWidth) * 100;
-        const newValue = Math.max(0, Math.min(100, startValue + percentDelta));
-        progressRange.value = newValue;
-
-        const newTime = (newValue / 100) * player.getDuration();
-        previewTime.textContent = formatClock(newTime);
-        positionPreview(newValue);
-        preview.style.display = "flex";
-      });
-
-      touchLayer.addEventListener("touchend", (e) => {
-        if (!isTouchDragging) return;
-        e.preventDefault();
-        isTouchDragging = false;
-        const pct = Number(progressRange.value);
-        player.seekTo((pct / 100) * player.getDuration(), true);
-        preview.style.display = "none";
-      });
-
-      // bersihkan interval kalau video player dihapus
-      window.addEventListener("beforeunload", () => clearInterval(intervalId));
+    // Helper: hitung persentase dari posisi X
+    function clientXToPct(clientX) {
+      const rect = progressWrap.getBoundingClientRect();
+      const pct = ((clientX - rect.left) / rect.width) * 100;
+      return Math.max(0, Math.min(100, pct));
     }
+
+    // Helper: update tampilan progress bar & dot
+    function updateUIForPct(clamped) {
+      progressRange.value = clamped;
+      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${clamped}%, rgba(200,200,200,0.15) ${clamped}%)`;
+    }
+
+    // === TAP (langsung loncat ke posisi tap) ===
+    progressWrap.addEventListener("touchstart", (e) => {
+      if (!player) return;
+      const touch = e.touches[0];
+      const pct = clientXToPct(touch.clientX);
+      const duration = player.getDuration();
+      const seekTime = (pct / 100) * duration;
+
+      player.seekTo(seekTime, true);
+      updateUIForPct(pct);
+    });
+
+    // === DRAG ===
+    progressWrap.addEventListener("touchmove", (e) => {
+      if (!player) return;
+      isTouchDragging = true;
+
+      const touch = e.touches[0];
+      const pct = clientXToPct(touch.clientX);
+      const duration = player.getDuration();
+      const seekTime = (pct / 100) * duration;
+
+      player.seekTo(seekTime, true);
+      updateUIForPct(pct);
+    });
+
+    progressWrap.addEventListener("touchend", () => {
+      isTouchDragging = false;
+    });
   }
 
   // === AUTO HIDE CONTROL DAN PROGRESS (Desktop only) ===
@@ -1658,12 +1633,6 @@ function initMobileOverlayPlayPause() {
 
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(initMobileOverlayPlayPause, 1000);
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(() => {
-    initMobileOverlayPlayPause(); // overlay play/pause
-  }, 1000);
 });
 
 // === Mouse-line Hover Indicator (Desktop Only) ===
