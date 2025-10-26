@@ -1002,6 +1002,9 @@ document.addEventListener("DOMContentLoaded", () => {
 ===================================================== */
 
 function initKeyboardControls() {
+  // 💡 Skip di HP / tablet
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+
   document.addEventListener("keydown", (e) => {
     if (keyboardCooldown) return; // ⛔ abaikan jika masih cooldown
 
@@ -1045,6 +1048,34 @@ function initKeyboardControls() {
         e.preventDefault();
         toggleFullscreen();
         showKeyboardIcon("⛶");
+        break;
+
+      // === Panah atas → volume naik 10% ===
+      case "arrowup":
+        e.preventDefault();
+        if (
+          typeof player.getVolume === "function" &&
+          typeof player.setVolume === "function"
+        ) {
+          let vol = player.getVolume();
+          let newVol = Math.min(100, vol + 10);
+          player.setVolume(newVol);
+          showVolumeOverlay(newVol);
+        }
+        break;
+
+      // === Panah bawah → volume turun 10% ===
+      case "arrowdown":
+        e.preventDefault();
+        if (
+          typeof player.getVolume === "function" &&
+          typeof player.setVolume === "function"
+        ) {
+          let vol = player.getVolume();
+          let newVol = Math.max(0, vol - 10);
+          player.setVolume(newVol);
+          showVolumeOverlay(newVol);
+        }
         break;
     }
   });
