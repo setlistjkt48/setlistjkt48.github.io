@@ -454,13 +454,10 @@ function initCustomControls() {
     const duration = player.getDuration();
     const seekTime = clickPos * duration;
 
-    isDragging = true; // sementara tahan update
-    progressRange.value = clickPos * 100;
-    progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.9) ${
-      clickPos * 100
-    }%, rgba(200,200,200,0.15) ${clickPos * 100}%)`;
+    isDragging = true;
     player.seekTo(seekTime, true);
-    isDragging = false; // langsung aktifkan kembali
+    updateProgressUI(seekTime, duration);
+    setTimeout(() => (isDragging = false), 200); // beri delay agar stabil
   });
 
   // Saat mulai drag
@@ -501,6 +498,15 @@ function initCustomControls() {
   document.addEventListener("mouseup", () => {
     isDragging = false;
   });
+
+  // --- Update progress dari player setiap 250ms ---
+  setInterval(() => {
+    if (!player || typeof player.getCurrentTime !== "function" || isDragging)
+      return;
+    const current = player.getCurrentTime();
+    const duration = player.getDuration();
+    updateProgressUI(current, duration);
+  }, 250);
 
   // Volume logic (fix restore volume)
   volRange.addEventListener("input", () => {
