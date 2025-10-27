@@ -2056,26 +2056,81 @@ function initMobileProgressBar() {
   }
 
   // === Touch handling ===
-  bg.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    isDragging = true;
-    progressWrapper.classList.add("dragging");
-    updateTouch(e.touches[0]);
-  });
+  // === Touch Start ===
+  bg.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!player) return;
+      e.preventDefault();
+      document.body.style.overflow = "hidden"; // stop scroll
 
-  bg.addEventListener("touchmove", (e) => {
-    e.preventDefault();
-    if (!isDragging) return;
-    updateTouch(e.touches[0]);
-  });
+      // === Hentikan auto-hide selama drag ===
+      clearTimeout(hideTimeout);
+      overlay.classList.add("show"); // pastikan overlay tetap tampil
 
-  bg.addEventListener("touchend", () => {
-    e.preventDefault();
-    if (!isDragging) return;
-    isDragging = false;
-    progressWrapper.classList.remove("dragging");
-    timeLabel.style.opacity = 0;
-  });
+      isDragging = true;
+      progressWrapper.classList.add("dragging");
+      dot.style.opacity = 1;
+      timeLabel.style.opacity = 1;
+
+      startClientX = e.touches[0].clientX;
+      startTime = player.getCurrentTime?.() || 0;
+    },
+    { passive: false }
+  );
+
+  // === Touch Move ===
+  bg.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!isDragging || !player) return;
+      e.preventDefault();
+
+      const dur = player.getDuration?.() || 0;
+      if (!dur) return;
+
+      const rect = bg.getBoundingClientRect();
+      const moveX = e.touches[0].clientX - startClientX;
+      const percentDelta = moveX / rect.width;
+      dragTargetTime = Math.max(
+        0,
+        Math.min(dur, startTime + percentDelta * dur)
+      );
+
+      const pct = (dragTargetTime / dur) * 100;
+      fill.style.width = `${pct}%`;
+      dot.style.left = `calc(${pct}% - 6px)`;
+      timeLabel.textContent = `${formatTime(dragTargetTime)} / ${formatTime(
+        dur
+      )}`;
+    },
+    { passive: false }
+  );
+
+  // === Touch End ===
+  bg.addEventListener(
+    "touchend",
+    (e) => {
+      if (!player) return;
+      e.preventDefault();
+      document.body.style.overflow = "";
+      isDragging = false;
+      progressWrapper.classList.remove("dragging");
+      player.seekTo(dragTargetTime, true);
+
+      setTimeout(() => {
+        dot.style.opacity = 0;
+        timeLabel.style.opacity = 0;
+      }, 300);
+
+      // === Auto-hide overlay baru mulai 2 detik setelah drag selesai ===
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        overlay.classList.remove("show");
+      }, 2000);
+    },
+    { passive: false }
+  );
 
   function updateTouch(touch) {
     const rect = bg.getBoundingClientRect();
