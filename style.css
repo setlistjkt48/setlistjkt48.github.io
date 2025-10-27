@@ -230,6 +230,13 @@ button.btn-danger:hover {
   .show-info {
     text-align: left;
     font-size: 0.85rem;
+    padding-left: 15px;
+    padding-right: 15px;
+    width: 100%;
+  }
+
+  .show-info .show-title {
+    text-align: center;
   }
 }
 
