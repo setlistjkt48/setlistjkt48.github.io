@@ -1739,6 +1739,7 @@ function updatePlayPauseIcons(state) {
    === MODE HP: Overlay Play/Pause + Auto Hide ===
 ===================================================== */
 function initMobileOverlayPlayPause() {
+  let isDraggingProgress = false;
   const playerContainer = document.querySelector(".player-container");
   if (!playerContainer) return;
 
@@ -1781,6 +1782,17 @@ function initMobileOverlayPlayPause() {
   `;
   playerContainer.appendChild(overlay);
 
+  /// === MINI PROGRESS BAR (AKTIF SAAT OVERLAY HIDDEN) ===
+  const miniProgress = document.createElement("div");
+  miniProgress.className = "mobile-mini-progress";
+  miniProgress.innerHTML = `
+  <div class="mini-progress-bg"></div>
+  <div class="mini-progress-fill"></div>
+  <div class="mini-progress-dot"></div>
+  <div class="mini-progress-time">00:00 / 00:00</div>
+`;
+  playerContainer.appendChild(miniProgress);
+
   // --- Ambil elemen penting ---
   const btnPlay = overlay.querySelector(".playpause-btn");
   const btnPrev = overlay.querySelector(".prev-btn");
@@ -1793,6 +1805,7 @@ function initMobileOverlayPlayPause() {
 
   // === Overlay show/hide ===
   overlay.addEventListener("click", () => {
+    if (isDraggingProgress) return; // ❌ cegah toggle saat drag
     overlayVisible = !overlayVisible;
     overlay.classList.toggle("show", overlayVisible);
     if (overlayVisible) autoHideOverlay();
@@ -1801,8 +1814,9 @@ function initMobileOverlayPlayPause() {
   function autoHideOverlay() {
     clearTimeout(hideTimeout);
     hideTimeout = setTimeout(() => {
-      overlay.classList.remove("show");
-      overlayVisible = false;
+      if (!isDraggingProgress) {
+        overlay.classList.remove("show");
+      }
     }, 2000);
   }
 
@@ -1856,6 +1870,112 @@ function initMobileOverlayPlayPause() {
     }
   }
 
+  // === Mini Progress Sync + Dragging ===
+  const miniBg = miniProgress.querySelector(".mini-progress-bg");
+  const miniFill = miniProgress.querySelector(".mini-progress-fill");
+  const miniDot = miniProgress.querySelector(".mini-progress-dot");
+  const miniTime = miniProgress.querySelector(".mini-progress-time");
+
+  let isMiniDragging = false;
+  let miniStartX = 0;
+  let miniStartTime = 0;
+  let miniDragTargetTime = 0;
+
+  // update otomatis saat tidak dragging
+  setInterval(() => {
+    if (!player || isDragging || isMiniDragging) return;
+    const dur = player.getDuration?.() || 0;
+    const cur = player.getCurrentTime?.() || 0;
+    if (!dur) return;
+    const pct = (cur / dur) * 100;
+    miniFill.style.width = `${pct}%`;
+    miniDot.style.left = `calc(${pct}% - 6px)`;
+  }, 300);
+
+  // === MINI PROGRESS DRAGGING (TANPA BUKA OVERLAY) ===
+  miniBg.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!player) return;
+      e.preventDefault();
+      document.body.style.overflow = "hidden";
+
+      isMiniDragging = true;
+      miniProgress.classList.add("dragging");
+
+      // Tampilkan dot & waktu
+      miniDot.style.opacity = 1;
+      miniTime.style.opacity = 1;
+      miniFill.style.background = "#ff2e76"; // ubah jadi pink saat drag
+
+      // Stop auto-hide overlay sementara (kalau overlay sedang aktif)
+      clearTimeout(hideTimeout);
+
+      miniStartX = e.touches[0].clientX;
+      miniStartTime = player.getCurrentTime?.() || 0;
+    },
+    { passive: false }
+  );
+
+  miniBg.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!isMiniDragging || !player) return;
+      e.preventDefault();
+
+      const dur = player.getDuration?.() || 0;
+      if (!dur) return;
+
+      const rect = miniBg.getBoundingClientRect();
+      const moveX = e.touches[0].clientX - miniStartX;
+      const percentDelta = moveX / rect.width;
+      miniDragTargetTime = Math.max(
+        0,
+        Math.min(dur, miniStartTime + percentDelta * dur)
+      );
+
+      const pct = (miniDragTargetTime / dur) * 100;
+      miniFill.style.width = `${pct}%`;
+      miniDot.style.left = `calc(${pct}% - 6px)`;
+      miniTime.textContent = `${formatTime(miniDragTargetTime)} / ${formatTime(
+        dur
+      )}`;
+    },
+    { passive: false }
+  );
+
+  miniBg.addEventListener(
+    "touchend",
+    (e) => {
+      if (!player) return;
+      e.preventDefault();
+      document.body.style.overflow = "";
+
+      isMiniDragging = false;
+      miniProgress.classList.remove("dragging");
+
+      // Seek video ke posisi baru
+      player.seekTo(miniDragTargetTime, true);
+
+      // Reset tampilan mini progress
+      setTimeout(() => {
+        miniDot.style.opacity = 0;
+        miniTime.style.opacity = 0;
+        miniFill.style.background = "rgba(255,255,255,0.8)";
+      }, 300);
+
+      // Pastikan overlay tidak terbuka
+      overlay.classList.remove("show");
+
+      // Jalankan auto-hide setelah 2 detik jika overlay sebelumnya aktif
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        overlay.classList.remove("show");
+      }, 2000);
+    },
+    { passive: false }
+  );
+
   // === Update waktu tiap detik ===
   setInterval(() => {
     if (!player || typeof player.getDuration !== "function") return;
@@ -1898,6 +2018,9 @@ function initMobileOverlayPlayPause() {
     const pct = (cur / dur) * 100;
     fill.style.width = `${pct}%`;
     dot.style.left = `calc(${pct}% - 6px)`;
+    // Sinkron ke mini progress bar
+    const miniFill = miniProgress.querySelector(".mini-progress-fill");
+    if (miniFill) miniFill.style.width = `${pct}%`;
   }, 300);
 
   // === Touch Start ===
@@ -1905,10 +2028,15 @@ function initMobileOverlayPlayPause() {
     "touchstart",
     (e) => {
       if (!player) return;
-      isDragging = true;
-      progressWrapper.classList.add("dragging");
+      e.preventDefault();
       document.body.style.overflow = "hidden"; // stop scroll
-      e.preventDefault(); // stop scroll
+
+      clearTimeout(hideTimeout);
+      overlay.classList.add("show"); // paksa overlay tetap tampil
+      isDragging = true;
+      isDraggingProgress = true; // 🔒 overlay tidak boleh auto-hide
+
+      progressWrapper.classList.add("dragging");
       dot.style.opacity = 1;
       timeLabel.style.opacity = 1;
 
@@ -1952,9 +2080,12 @@ function initMobileOverlayPlayPause() {
     (e) => {
       if (!player) return;
       e.preventDefault();
-      document.body.style.overflow = ""; // aktifkan scroll lagi
+      document.body.style.overflow = "";
+
       isDragging = false;
+      isDraggingProgress = false; // 🔓 izinkan auto-hide lagi
       progressWrapper.classList.remove("dragging");
+
       player.seekTo(dragTargetTime, true);
 
       setTimeout(() => {
@@ -1962,10 +2093,12 @@ function initMobileOverlayPlayPause() {
         timeLabel.style.opacity = 0;
       }, 300);
 
-      // restart auto-hide overlay
+      // Jalankan auto-hide 2 detik setelah drag selesai
       clearTimeout(hideTimeout);
       hideTimeout = setTimeout(() => {
-        overlay.classList.remove("show");
+        if (!isDraggingProgress) {
+          overlay.classList.remove("show");
+        }
       }, 2000);
     },
     { passive: false }
@@ -2062,11 +2195,11 @@ function initMobileProgressBar() {
     (e) => {
       if (!player) return;
       e.preventDefault();
-      document.body.style.overflow = "hidden"; // stop scroll
+      document.body.style.overflow = "hidden"; // cegah scroll halaman
 
-      // === Hentikan auto-hide selama drag ===
+      // 🔒 Hentikan auto-hide overlay selama drag
       clearTimeout(hideTimeout);
-      overlay.classList.add("show"); // pastikan overlay tetap tampil
+      overlay.classList.add("show"); // paksa overlay tetap tampil
 
       isDragging = true;
       progressWrapper.classList.add("dragging");
@@ -2113,9 +2246,11 @@ function initMobileProgressBar() {
     (e) => {
       if (!player) return;
       e.preventDefault();
-      document.body.style.overflow = "";
+
+      document.body.style.overflow = ""; // aktifkan scroll lagi
       isDragging = false;
       progressWrapper.classList.remove("dragging");
+
       player.seekTo(dragTargetTime, true);
 
       setTimeout(() => {
@@ -2123,7 +2258,7 @@ function initMobileProgressBar() {
         timeLabel.style.opacity = 0;
       }, 300);
 
-      // === Auto-hide overlay baru mulai 2 detik setelah drag selesai ===
+      // 🕒 Overlay auto-hide 2 detik setelah drag selesai
       clearTimeout(hideTimeout);
       hideTimeout = setTimeout(() => {
         overlay.classList.remove("show");
