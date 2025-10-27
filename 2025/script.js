@@ -124,9 +124,10 @@ function onPlayerStateChange(event) {
 /* =====================================================
    === Ganti Video / Playlist ===
 ===================================================== */
+// --- Perbaikan di fungsi loadVideo (tambahkan loadLineup)
 function loadVideo(videoId, index) {
   if (!player || typeof player.loadVideoById !== "function") {
-    console.warn("Player belum siap, tunda load video...");
+    console.warn("Player belum siap, tunda load video.");
     setTimeout(() => loadVideo(videoId, index), 300);
     return;
   }
@@ -141,10 +142,26 @@ function loadVideo(videoId, index) {
   // Update tampilan playlist aktif
   updateActiveItem(index);
 
-  // Scroll agar item aktif terlihat
+  // **--- PENTING: perbarui lineup member sesuai index ---**
+  // Pastikan fungsi loadLineup tersedia dan indeks valid
+  try {
+    if (typeof loadLineup === "function") {
+      loadLineup(index);
+    }
+  } catch (err) {
+    console.warn("Gagal memuat lineup untuk index", index, err);
+  }
+
+  // === Scroll behavior versi final (benar-benar mentok atas) ===
   const activeItem = document.querySelectorAll(".playlist .item")[index];
-  if (activeItem) {
-    activeItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  const isFromPlaylistClick = event?.target?.closest?.(".playlist .item");
+
+  if (isFromPlaylistClick) {
+    // 🎯 Klik playlist → gulir ke paling atas halaman (mentok)
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else {
+    // 🎯 Next / Prev / Keyboard / Autoplay → tetap stay di atas
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   // Pastikan langsung play (terkadang butuh delay kecil)
@@ -211,8 +228,10 @@ function loadLineup(index) {
   updateVisibleMembers();
 }
 
+// --- Perbaikan di updateVisibleMembers (spread operator)
 function updateVisibleMembers() {
-  const cards = [...grid.children];
+  if (!grid) return;
+  const cards = [...grid.children]; // <-- perbaikan
   cards.forEach((c) => {
     c.style.display = expanded ? "block" : "none";
   });
@@ -777,56 +796,307 @@ function initCustomControls() {
     });
   }
 
-  // === MODE HP: Drag & Tap Progress Sama Seperti Desktop ===
+  // =========================
+  // MOBILE: advanced touch seek + mobile controls
+  // =========================
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     const progressWrap = document.querySelector(".cust-progress-wrap");
     const progressRange = document.getElementById("progressRange");
-    if (!progressWrap || !progressRange) return;
+    const playerContainer = document.querySelector(".player-container");
+    const overlay = document.querySelector(".gesture-overlay");
+    const timeLeftEl = document.querySelector(".time-left") || createTimeLeft();
+    const fsRight = document.querySelector(".fs-right") || createFsRight();
 
-    let isTouchDragging = false;
+    // helper create fallback elements if not exist
+    function createTimeLeft() {
+      const el = document.createElement("div");
+      el.className = "time-left";
+      el.textContent = "0:00 / 0:00";
+      playerContainer.appendChild(el);
+      return el;
+    }
+    function createFsRight() {
+      const btn = document.createElement("button");
+      btn.className = "fs-right ctrl-btn";
+      btn.innerHTML =
+        '<svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M7 14H5v5h5v-2H7v-3zm10-9h-5v2h3v3h2V5zM7 5h5V3H5v5h2V5zm10 14v-5h-2v3h-3v2h5z"/></svg>';
+      playerContainer.appendChild(btn);
+      btn.addEventListener("click", toggleFullscreenMobile);
+      return btn;
+    }
 
-    // Helper: hitung persentase dari posisi X
+    // add seek dot & tooltip
+    let seekDot = document.querySelector(".seek-dot");
+    let seekTooltip = document.querySelector(".seek-tooltip");
+    if (!seekDot) {
+      seekDot = document.createElement("div");
+      seekDot.className = "seek-dot";
+      playerContainer.appendChild(seekDot);
+    }
+    if (!seekTooltip) {
+      seekTooltip = document.createElement("div");
+      seekTooltip.className = "seek-tooltip";
+      playerContainer.appendChild(seekTooltip);
+    }
+
+    // state
+    let touchActive = false;
+    let startTouchX = 0;
+    let startPct = 0; // starting percent (from currentTime)
+    let startTimeAtTouch = 0;
+    let wasPlayingBeforeTouch = false;
+
+    function clamp(v, a = 0, b = 100) {
+      return Math.max(a, Math.min(b, v));
+    }
+
+    function pctToTime(pct) {
+      const dur =
+        player && typeof player.getDuration === "function"
+          ? player.getDuration()
+          : 0;
+      return (pct / 100) * dur;
+    }
+
+    function setProgressUI(pct) {
+      // set css var so background gradient uses it
+      progressWrap.style.setProperty("--pct", pct + "%");
+      progressRange.value = pct;
+    }
+
+    // convert clientX to pct (0-100)
     function clientXToPct(clientX) {
       const rect = progressWrap.getBoundingClientRect();
-      const pct = ((clientX - rect.left) / rect.width) * 100;
-      return Math.max(0, Math.min(100, pct));
+      const x = clientX - rect.left;
+      const pct = (x / rect.width) * 100;
+      return clamp(pct, 0, 100);
     }
 
-    // Helper: update tampilan progress bar & dot
-    function updateUIForPct(clamped) {
-      progressRange.value = clamped;
-      progressRange.style.background = `linear-gradient(90deg, rgba(236,72,153,0.95) ${clamped}%, rgba(200,200,200,0.15) ${clamped}%)`;
+    // show/hide helpers
+    function showTouchUI() {
+      progressWrap.classList.add("mobile-active");
+      seekDot.style.display = "block";
+      seekTooltip.style.display = "block";
+      playerContainer.classList.add("mobile-showing"); // show controls while touching
+      clearHideTimer(); // prevent auto-hide while touching
+    }
+    function hideTouchUI() {
+      progressWrap.classList.remove("mobile-active");
+      seekDot.style.display = "none";
+      seekTooltip.style.display = "none";
+      // let auto-hide rules apply (mobile-playing class remains)
     }
 
-    // === TAP (langsung loncat ke posisi tap) ===
-    progressWrap.addEventListener("touchstart", (e) => {
-      if (!player) return;
-      const touch = e.touches[0];
-      const pct = clientXToPct(touch.clientX);
-      const duration = player.getDuration();
-      const seekTime = (pct / 100) * duration;
+    // position dot + tooltip by pct (0-100)
+    function positionDotByPct(pct) {
+      const rect = progressWrap.getBoundingClientRect();
+      const leftPx = rect.left + (pct / 100) * rect.width;
+      const localLeft = pct + "%";
+      seekDot.style.left = pct + "%";
+      seekTooltip.style.left = pct + "%";
+    }
 
-      player.seekTo(seekTime, true);
-      updateUIForPct(pct);
+    // touch handlers
+    progressWrap.addEventListener(
+      "touchstart",
+      (ev) => {
+        ev.preventDefault();
+        if (!player) return;
+        touchActive = true;
+        const t = ev.touches[0];
+        startTouchX = t.clientX;
+        startTimeAtTouch = player.getCurrentTime();
+        const dur = player.getDuration() || 0;
+        startPct = dur > 0 ? (startTimeAtTouch / dur) * 100 : 0;
+        wasPlayingBeforeTouch =
+          player.getPlayerState &&
+          player.getPlayerState() === YT.PlayerState.PLAYING;
+        // pause for comfortable seeking
+        try {
+          if (wasPlayingBeforeTouch) player.pauseVideo();
+        } catch (e) {}
+
+        showTouchUI();
+        // initial dot position at current playback
+        positionDotByPct(startPct);
+        setProgressUI(startPct);
+        seekTooltip.textContent = formatClock(Math.floor(startTimeAtTouch));
+      },
+      { passive: false }
+    );
+
+    progressWrap.addEventListener(
+      "touchmove",
+      (ev) => {
+        ev.preventDefault();
+        if (!touchActive) return;
+        const t = ev.touches[0];
+        const rect = progressWrap.getBoundingClientRect();
+        const dx = t.clientX - startTouchX;
+        const pctDelta = (dx / rect.width) * 100;
+        const newPct = clamp(startPct + pctDelta, 0, 100);
+        // update UI only (no seek yet)
+        setProgressUI(newPct);
+        positionDotByPct(newPct);
+        const newTime = pctToTime(newPct);
+        seekTooltip.textContent = formatClock(Math.floor(newTime));
+      },
+      { passive: false }
+    );
+
+    progressWrap.addEventListener(
+      "touchend",
+      (ev) => {
+        ev.preventDefault();
+        if (!touchActive) return;
+        touchActive = false;
+        // compute final pct from dot position
+        const leftStyle = seekDot.style.left || progressRange.value + "%";
+        const pct = parseFloat(leftStyle);
+        const newTime = pctToTime(pct);
+        // perform seek
+        try {
+          player.seekTo(newTime, true);
+        } catch (e) {
+          console.warn(e);
+        }
+        // resume if was playing
+        if (wasPlayingBeforeTouch) {
+          try {
+            player.playVideo();
+          } catch (e) {}
+        }
+        // hide dot & tooltip after short delay for smoothness
+        setTimeout(() => hideTouchUI(), 160);
+      },
+      { passive: false }
+    );
+
+    // If user taps overlay (single tap) -> toggle controls (show / hide) with auto-hide 2s
+    let mobileToggleTimer = null;
+    function showMobileControlsOnce() {
+      clearTimeout(mobileToggleTimer);
+      playerContainer.classList.add("mobile-showing");
+      // ensure controls visible for 2s (then hide only if playing)
+      mobileToggleTimer = setTimeout(() => {
+        playerContainer.classList.remove("mobile-showing");
+      }, 2000);
+    }
+
+    // overlay click/tap toggles controls
+    overlay.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      // if currently showing -> hide immediate; else show
+      if (playerContainer.classList.contains("mobile-showing")) {
+        playerContainer.classList.remove("mobile-showing");
+        clearTimeout(mobileToggleTimer);
+      } else {
+        showMobileControlsOnce();
+      }
     });
 
-    // === DRAG ===
-    progressWrap.addEventListener("touchmove", (e) => {
-      if (!player) return;
-      isTouchDragging = true;
+    // When video plays/pauses adjust mobile-playing class
+    const playStateWatcher = setInterval(() => {
+      if (!player || typeof player.getPlayerState !== "function") return;
+      const st = player.getPlayerState();
+      if (st === YT.PlayerState.PLAYING) {
+        playerContainer.classList.add("mobile-playing");
+      } else {
+        playerContainer.classList.remove("mobile-playing");
+        playerContainer.classList.add("mobile-showing"); // show controls when paused
+      }
+    }, 300);
 
-      const touch = e.touches[0];
-      const pct = clientXToPct(touch.clientX);
-      const duration = player.getDuration();
-      const seekTime = (pct / 100) * duration;
+    // make sure time-left updates
+    setInterval(() => {
+      if (!player || typeof player.getCurrentTime !== "function") return;
+      const cur = player.getCurrentTime();
+      const dur = player.getDuration();
+      timeLeftEl.textContent = `${formatClock(Math.floor(cur))} / ${formatClock(
+        Math.floor(dur || 0)
+      )}`;
+    }, 400);
 
-      player.seekTo(seekTime, true);
-      updateUIForPct(pct);
+    // PREV / NEXT button behavior already exist (buttons in markup). Ensure they are visible center.
+    // Attach listeners if not already done:
+    const prevBtn = document.getElementById("btnPrev");
+    const nextBtn = document.getElementById("btnNext");
+    const playBtn = document.getElementById("btnPlayPause");
+
+    // safety attach if not present
+    if (playBtn) {
+      playBtn.addEventListener("click", () => {
+        const st =
+          player && typeof player.getPlayerState === "function"
+            ? player.getPlayerState()
+            : -1;
+        if (st === YT.PlayerState.PLAYING) player.pauseVideo();
+        else player.playVideo();
+        showMobileControlsOnce();
+      });
+    }
+
+    // fullscreen mobile: try to lock orientation to landscape when entering fullscreen
+    function toggleFullscreenMobile() {
+      const container = document.querySelector(".player-container");
+      const docIsFull = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement
+      );
+      // toggle fullscreen
+      if (!docIsFull) {
+        if (container.requestFullscreen) container.requestFullscreen();
+        else if (container.webkitRequestFullscreen)
+          container.webkitRequestFullscreen();
+        // try lock orientation
+        if (screen.orientation && screen.orientation.lock) {
+          try {
+            screen.orientation.lock("landscape");
+          } catch (e) {
+            /* ignore */
+          }
+        }
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        // unlock orientation
+        if (screen.orientation && screen.orientation.unlock) {
+          try {
+            screen.orientation.unlock();
+          } catch (e) {
+            /* ignore */
+          }
+        }
+      }
+    }
+
+    // listen for fullscreen changes to auto-lock/unlock orientation
+    document.addEventListener("fullscreenchange", () => {
+      const docIsFull = !!document.fullscreenElement;
+      if (docIsFull) {
+        try {
+          screen.orientation.lock("landscape");
+        } catch (e) {}
+        playerContainer.classList.add("mobile-showing");
+      } else {
+        try {
+          screen.orientation.unlock();
+        } catch (e) {}
+        playerContainer.classList.remove("mobile-showing");
+      }
     });
 
-    progressWrap.addEventListener("touchend", () => {
-      isTouchDragging = false;
-    });
+    // helper clear timer
+    function clearHideTimer() {
+      if (mobileToggleTimer) {
+        clearTimeout(mobileToggleTimer);
+        mobileToggleTimer = null;
+      }
+    }
+
+    // ensure initial UI state
+    hideTouchUI();
   }
 
   // === AUTO HIDE CONTROL DAN PROGRESS (Desktop only) ===
@@ -916,67 +1186,6 @@ function initCustomControls() {
       }
     });
   }
-}
-
-/* =====================================================
-   === MODE HP: Auto-hide control + progress reposition ===
-===================================================== */
-function initMobileControlBehavior() {
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (!isMobile) return; // hanya aktif di HP
-
-  const container = document.querySelector(".player-container");
-  const controls = container.querySelector(".cust-controls");
-  const progress = container.querySelector(".cust-progress-wrap");
-  const overlay = container.querySelector(".gesture-overlay");
-
-  if (!container || !controls || !progress || !overlay) return;
-
-  // Ketika video mulai bermain → sembunyikan kontrol
-  const onPlay = () => {
-    container.classList.add("mobile-playing");
-  };
-
-  // Ketika video dijeda → tampilkan kontrol kembali
-  const onPause = () => {
-    container.classList.remove("mobile-playing");
-  };
-
-  // Hubungkan event player
-  const waitPlayer = setInterval(() => {
-    if (player && typeof player.addEventListener === "function") {
-      clearInterval(waitPlayer);
-      player.addEventListener("onStateChange", (event) => {
-        if (event.data === YT.PlayerState.PLAYING) onPlay();
-        if (event.data === YT.PlayerState.PAUSED) onPause();
-      });
-    }
-  }, 300);
-
-  // Tap layar = tampilkan sementara kontrol
-  let tapTimer = null;
-  overlay.addEventListener("click", () => {
-    if (tapTimer) clearTimeout(tapTimer);
-
-    // 1️⃣ Tambah class untuk animasi CSS
-    container.classList.add("mobile-showing");
-
-    // 2️⃣ Paksa tampilkan kontrol & progress wrap (agar langsung muncul)
-    const controls = container.querySelector(".cust-controls");
-    const progress = container.querySelector(".cust-progress-wrap");
-    if (controls) controls.style.opacity = "1";
-    if (progress) {
-      progress.style.bottom = "40px";
-      progress.style.opacity = "1";
-    }
-
-    // 3️⃣ Setelah 3 detik, sembunyikan lagi
-    tapTimer = setTimeout(() => {
-      container.classList.remove("mobile-showing");
-      if (controls) controls.style.opacity = "";
-      if (progress) progress.style.bottom = "";
-    }, 3000);
-  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1530,105 +1739,381 @@ function updatePlayPauseIcons(state) {
    === MODE HP: Overlay Play/Pause + Auto Hide ===
 ===================================================== */
 function initMobileOverlayPlayPause() {
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (!isMobile) return;
+  const playerContainer = document.querySelector(".player-container");
+  if (!playerContainer) return;
 
-  const container = document.querySelector(".player-container");
-  const overlay = container.querySelector(".gesture-overlay");
-  const playPauseBtn = container.querySelector(".overlay-playpause-btn");
+  // --- Buat overlay ---
+  const overlay = document.createElement("div");
+  overlay.className = "mobile-overlay";
+  overlay.innerHTML = `
+    <div class="overlay-gesture"></div>
+    <div class="overlay-center">
+      <button class="overlay-btn prev-btn" title="Previous">
+        <svg viewBox="0 0 24 24"><path d="M6 12L18 4v16L6 12zM4 4h2v16H4V4z"/></svg>
+      </button>
+      <button class="overlay-btn playpause-btn" title="Play / Pause">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="overlay-btn next-btn" title="Next">
+        <svg viewBox="0 0 24 24"><path d="M18 12L6 4v16l12-8zM18 4h2v16h-2V4z"/></svg>
+      </button>
+    </div>
 
-  if (!container || !overlay || !playPauseBtn) return;
+    <div class="overlay-bottom">
+      <div class="overlay-time">00:00 / 00:00</div>
+      <button class="overlay-fs" title="Fullscreen">
+        <svg width="800px" height="800px" viewBox="0 0 16 16" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M10 15H15V10H13.2V13.2H10V15ZM6 15V13.2H2.8V10H1V15H6ZM10 2.8H12.375H13.2V6H15V1H10V2.8ZM6 1V2.8H2.8V6H1V1H6Z" fill="rgba(255, 255, 255, 0.8)"/>
+        </svg>
+      </button>
+    </div>
+  `;
+  overlay.innerHTML += `
+  <div class="mobile-progress-wrapper">
+    <div class="mobile-progress-bg"></div>
+    <div class="mobile-progress-fill"></div>
+    <div class="mobile-progress-dot"></div>
+    <div class="mobile-progress-time">00:00</div>
+  </div>
+  `;
+  playerContainer.appendChild(overlay);
 
-  // SVG icons (YouTube style)
-  const playSVG = `
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20 15 L52 32 L20 49 Z" fill="currentColor"/>
-    </svg>`;
-  const pauseSVG = `
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <rect x="18" y="14" width="8" height="36" rx="1" fill="currentColor"/>
-      <rect x="38" y="14" width="8" height="36" rx="1" fill="currentColor"/>
-    </svg>`;
+  // --- Ambil elemen penting ---
+  const btnPlay = overlay.querySelector(".playpause-btn");
+  const btnPrev = overlay.querySelector(".prev-btn");
+  const btnNext = overlay.querySelector(".next-btn");
+  const timeDisplay = overlay.querySelector(".overlay-time");
+  const fsBtn = overlay.querySelector(".overlay-fs");
 
-  let overlayVisible = false;
-  let hasStarted = false;
-  let autoHideTimer = null;
+  let overlayVisible = true;
+  let hideTimeout;
 
-  // === Helper untuk menampilkan overlay dengan auto-hide ===
-  function showOverlayAutoHide() {
-    playPauseBtn.classList.add("show");
-    overlayVisible = true;
+  // === Overlay show/hide ===
+  overlay.addEventListener("click", () => {
+    overlayVisible = !overlayVisible;
+    overlay.classList.toggle("show", overlayVisible);
+    if (overlayVisible) autoHideOverlay();
+  });
 
-    if (autoHideTimer) clearTimeout(autoHideTimer);
-    autoHideTimer = setTimeout(() => {
-      // hanya auto-hide kalau video sedang PLAY
-      if (player.getPlayerState() === YT.PlayerState.PLAYING) {
-        playPauseBtn.classList.remove("show");
-        overlayVisible = false;
-      }
-    }, 2000); // 2 detik auto hide
+  function autoHideOverlay() {
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      overlay.classList.remove("show");
+      overlayVisible = false;
+    }, 2000);
   }
 
-  // === Klik di layar ===
-  overlay.addEventListener("click", (e) => {
-    // 1️⃣ Tap pertama → play video
-    if (!hasStarted) {
-      player.playVideo();
-      hasStarted = true;
-      playPauseBtn.classList.remove("show");
-      container.classList.add("mobile-playing");
-      container.classList.remove("mobile-paused");
-      playPauseBtn.innerHTML = pauseSVG;
-      return;
-    }
-
-    // 2️⃣ Setelah mulai → toggle overlay
-    if (overlayVisible) {
-      playPauseBtn.classList.remove("show");
-      overlayVisible = false;
-      if (autoHideTimer) clearTimeout(autoHideTimer);
-    } else {
-      showOverlayAutoHide();
-    }
-  });
-
-  // === Klik tombol overlay (Play/Pause) ===
-  playPauseBtn.addEventListener("click", (e) => {
+  // === Tombol Play / Pause ===
+  btnPlay.addEventListener("click", (e) => {
     e.stopPropagation();
-    const state = player.getPlayerState();
-    if (state === YT.PlayerState.PLAYING) {
-      player.pauseVideo();
-      updatePlayPauseIcons("paused");
-      playPauseBtn.innerHTML = playSVG;
-      playPauseBtn.classList.add("show"); // tampilkan tetap saat pause
-      if (autoHideTimer) clearTimeout(autoHideTimer);
-    } else {
-      player.playVideo();
-      updatePlayPauseIcons("playing");
-      playPauseBtn.innerHTML = pauseSVG;
-      showOverlayAutoHide(); // mulai auto-hide lagi
-    }
+    const state = player?.getPlayerState?.();
+    if (state === 1) player.pauseVideo();
+    else player.playVideo();
+    autoHideOverlay();
   });
 
-  // === Pantau status player (sinkronisasi UI) ===
-  const checkState = () => {
-    if (!player || typeof player.getPlayerState !== "function") return;
-    const st = player.getPlayerState();
+  // === Tombol Previous / Next ===
+  btnPrev.addEventListener("click", (e) => {
+    e.stopPropagation();
+    goToPrevVideo();
+    autoHideOverlay();
+  });
+  btnNext.addEventListener("click", (e) => {
+    e.stopPropagation();
+    goToNextVideo();
+    autoHideOverlay();
+  });
 
-    if (st === YT.PlayerState.PLAYING) {
-      hasStarted = true;
-      container.classList.add("mobile-playing");
-      container.classList.remove("mobile-paused");
-      playPauseBtn.innerHTML = pauseSVG;
-    } else if (st === YT.PlayerState.PAUSED) {
-      container.classList.remove("mobile-playing");
-      container.classList.add("mobile-paused");
-      playPauseBtn.innerHTML = playSVG;
-      playPauseBtn.classList.add("show"); // tetap terlihat ketika pause
+  // === Tombol Fullscreen + Auto Rotate ===
+  fsBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!document.fullscreenElement) {
+      playerContainer.requestFullscreen();
+      if (screen.orientation && screen.orientation.lock)
+        screen.orientation.lock("landscape").catch(() => {});
+    } else {
+      document.exitFullscreen();
+      if (screen.orientation && screen.orientation.unlock)
+        screen.orientation.unlock();
     }
-  };
+    autoHideOverlay();
+  });
 
-  setInterval(checkState, 500);
+  // === Update icon Play / Pause sesuai status ===
+  function updatePlayIcon() {
+    const state = player?.getPlayerState?.();
+    const svg = btnPlay.querySelector("svg");
+    if (!svg) return;
+    if (state === 1) {
+      // sedang main → tampil icon pause
+      svg.innerHTML = `<path d="M6 19h4V5H6zm8-14v14h4V5h-4z"/>`;
+    } else {
+      // sedang pause / buffering / stopped → tampil icon play
+      svg.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+    }
+  }
+
+  // === Update waktu tiap detik ===
+  setInterval(() => {
+    if (!player || typeof player.getDuration !== "function") return;
+    const cur = player.getCurrentTime();
+    const dur = player.getDuration();
+    timeDisplay.textContent = `${formatTime(cur)} / ${formatTime(dur)}`;
+    updatePlayIcon();
+  }, 500);
+
+  function formatTime(sec) {
+    if (isNaN(sec)) return "00:00";
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    return h > 0
+      ? `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s
+          .toString()
+          .padStart(2, "0")}`
+      : `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+
+  // === PROGRESS BAR MOBILE (FULL FIX - DRAG WORKS) ===
+  const progressWrapper = overlay.querySelector(".mobile-progress-wrapper");
+  const bg = overlay.querySelector(".mobile-progress-bg");
+  const fill = overlay.querySelector(".mobile-progress-fill");
+  const dot = overlay.querySelector(".mobile-progress-dot");
+  const timeLabel = overlay.querySelector(".mobile-progress-time");
+
+  let isDragging = false;
+  let dragTargetTime = 0;
+  let startClientX = 0;
+  let startTime = 0;
+
+  // Update progress bar setiap 300ms saat tidak dragging
+  setInterval(() => {
+    if (!player || isDragging) return;
+    const dur = player.getDuration?.() || 0;
+    const cur = player.getCurrentTime?.() || 0;
+    if (!dur) return;
+    const pct = (cur / dur) * 100;
+    fill.style.width = `${pct}%`;
+    dot.style.left = `calc(${pct}% - 6px)`;
+  }, 300);
+
+  // === Touch Start ===
+  bg.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!player) return;
+      isDragging = true;
+      progressWrapper.classList.add("dragging");
+      document.body.style.overflow = "hidden"; // stop scroll
+      e.preventDefault(); // stop scroll
+      dot.style.opacity = 1;
+      timeLabel.style.opacity = 1;
+
+      startClientX = e.touches[0].clientX;
+      startTime = player.getCurrentTime?.() || 0;
+    },
+    { passive: false }
+  );
+
+  // === Touch Move ===
+  bg.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!isDragging || !player) return;
+      e.preventDefault();
+
+      const dur = player.getDuration?.() || 0;
+      if (!dur) return;
+
+      const rect = bg.getBoundingClientRect();
+      const moveX = e.touches[0].clientX - startClientX;
+      const percentDelta = moveX / rect.width;
+      dragTargetTime = Math.max(
+        0,
+        Math.min(dur, startTime + percentDelta * dur)
+      );
+
+      const pct = (dragTargetTime / dur) * 100;
+      fill.style.width = `${pct}%`;
+      dot.style.left = `calc(${pct}% - 6px)`;
+      timeLabel.textContent = `${formatTime(dragTargetTime)} / ${formatTime(
+        dur
+      )}`;
+    },
+    { passive: false }
+  );
+
+  // === Touch End ===
+  bg.addEventListener(
+    "touchend",
+    (e) => {
+      if (!player) return;
+      e.preventDefault();
+      document.body.style.overflow = ""; // aktifkan scroll lagi
+      isDragging = false;
+      progressWrapper.classList.remove("dragging");
+      player.seekTo(dragTargetTime, true);
+
+      setTimeout(() => {
+        dot.style.opacity = 0;
+        timeLabel.style.opacity = 0;
+      }, 300);
+
+      // restart auto-hide overlay
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        overlay.classList.remove("show");
+      }, 2000);
+    },
+    { passive: false }
+  );
+
+  // make sure label default hidden
+  timeLabel.style.opacity = 0;
+  dot.style.opacity = 0;
+
+  // === DOUBLE TAP (forward/rewind 10s) ===
+  let lastTapLeft = 0;
+  let lastTapRight = 0;
+
+  overlay.addEventListener("click", (e) => {
+    const now = Date.now();
+    const rect = overlay.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const zone = x < rect.width / 2 ? "left" : "right";
+    const isDoubleTap =
+      (zone === "left" && now - lastTapLeft < 300) ||
+      (zone === "right" && now - lastTapRight < 300);
+
+    if (isDoubleTap) {
+      e.stopPropagation(); // cegah toggle overlay
+      const cur = player.getCurrentTime();
+      if (zone === "left") {
+        player.seekTo(Math.max(0, cur - 10), true);
+        showDoubleTapIcon("left");
+      } else {
+        player.seekTo(Math.min(player.getDuration(), cur + 10), true);
+        showDoubleTapIcon("right");
+      }
+    }
+
+    if (zone === "left") lastTapLeft = now;
+    if (zone === "right") lastTapRight = now;
+  });
+
+  // === Helper tampilkan ikon double tap (⟲ / ⟳) ===
+  function showDoubleTapIcon(direction) {
+    const icon = document.createElement("div");
+    icon.className = `double-tap-icon ${direction}`;
+    icon.innerHTML = direction === "left" ? "-10s ⟲" : "⟳ +10s";
+    playerContainer.appendChild(icon);
+    requestAnimationFrame(() => icon.classList.add("show"));
+    setTimeout(() => icon.remove(), 600);
+  }
+
+  // === Tampilkan awal & auto-hide ===
+  overlay.classList.add("show");
+  autoHideOverlay();
+}
+
+function initMobileProgressBar() {
+  // Deteksi jika bukan HP → jangan tampilkan
+  if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+
+  const playerContainer = document.querySelector(".player-container");
+  if (!playerContainer) return;
+
+  // Buat elemen progress bar
+  const progressWrapper = document.createElement("div");
+  progressWrapper.className = "mobile-progress-wrapper";
+  progressWrapper.innerHTML = `
+    <div class="mobile-progress-bg"></div>
+    <div class="mobile-progress-fill"></div>
+    <div class="mobile-progress-dot"></div>
+    <div class="mobile-progress-time">00:00</div>
+  `;
+  playerContainer.appendChild(progressWrapper);
+
+  const bg = progressWrapper.querySelector(".mobile-progress-bg");
+  const fill = progressWrapper.querySelector(".mobile-progress-fill");
+  const dot = progressWrapper.querySelector(".mobile-progress-dot");
+  const timeLabel = progressWrapper.querySelector(".mobile-progress-time");
+
+  let isDragging = false;
+
+  // === Update progress ===
+  function updateProgress() {
+    if (!player || typeof player.getDuration !== "function") return;
+    const dur = player.getDuration();
+    const cur = player.getCurrentTime();
+    const percent = (cur / dur) * 100;
+    fill.style.width = percent + "%";
+    dot.style.left = `calc(${percent}% - 6px)`; // posisi dot
+    timeLabel.textContent = formatTime(cur);
+  }
+
+  // === Touch handling ===
+  bg.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    isDragging = true;
+    progressWrapper.classList.add("dragging");
+    updateTouch(e.touches[0]);
+  });
+
+  bg.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    if (!isDragging) return;
+    updateTouch(e.touches[0]);
+  });
+
+  bg.addEventListener("touchend", () => {
+    e.preventDefault();
+    if (!isDragging) return;
+    isDragging = false;
+    progressWrapper.classList.remove("dragging");
+    timeLabel.style.opacity = 0;
+  });
+
+  function updateTouch(touch) {
+    const rect = bg.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, touch.clientX - rect.left));
+    const percent = x / rect.width;
+    const dur = player.getDuration();
+    const seekTime = dur * percent;
+
+    // Update tampilan
+    fill.style.width = `${percent * 100}%`;
+    dot.style.left = `calc(${percent * 100}% - 6px)`;
+    timeLabel.textContent = formatTime(seekTime);
+    timeLabel.style.opacity = 1;
+
+    // Waktu muncul tepat di atas dot
+    const dotRect = dot.getBoundingClientRect();
+    timeLabel.style.left = `${dotRect.left + dotRect.width / 2 - 20}px`;
+
+    // Saat user lepas → seek
+    if (!isDragging) {
+      player.seekTo(seekTime, true);
+    }
+  }
+
+  // === Interval update progress setiap 500ms ===
+  setInterval(() => {
+    if (!isDragging) updateProgress();
+  }, 500);
+
+  // Format waktu (mm:ss atau hh:mm:ss)
+  function formatTime(sec) {
+    if (isNaN(sec)) return "00:00";
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    return h > 0
+      ? `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s
+          .toString()
+          .padStart(2, "0")}`
+      : `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
