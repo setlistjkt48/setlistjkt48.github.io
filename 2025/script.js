@@ -1742,6 +1742,9 @@ function initMobileOverlayPlayPause() {
   const playerContainer = document.querySelector(".player-container");
   if (!playerContainer) return;
 
+  // Hanya aktif di perangkat mobile
+  if (window.innerWidth >= 768) return;
+
   // --- Buat overlay ---
   const overlay = document.createElement("div");
   overlay.className = "mobile-overlay";
