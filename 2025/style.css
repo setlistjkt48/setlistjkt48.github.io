@@ -536,30 +536,6 @@ footer {
   background: #fff;
 }
 
-/* responsive: small screens -> stack left controls and shrink sliders */
-@media (max-width: 720px) {
-  .left-controls {
-    gap: 1px;
-  }
-  .left-controls .ctrl-btn {
-    font-size: 20px;
-  }
-  .volume-range {
-    width: 60px;
-  }
-  .time-display {
-    min-width: 90px;
-    font-size: 12px;
-  }
-  .cust-controls {
-    padding: 5px 14px;
-  }
-  .cust-progress-wrap {
-    bottom: 40px; /* ⬅️ turunkan posisinya */
-    height: 20px !important;
-  } /* adjust for mobile */
-}
-
 /* === Auto-hide untuk custom control & progress bar === */
 .cust-controls,
 .cust-progress-wrap {
@@ -734,34 +710,6 @@ footer {
     top: 50%;
     right: 15%;
     transform: translate(50%, -50%);
-  }
-}
-
-/* === MODE HP: Auto-hide Custom Controls === */
-@media (max-width: 900px) {
-  /* Saat video diputar: sembunyikan control bar */
-  .player-container.mobile-playing .cust-controls {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(30px); /* animasi turun halus */
-    transition: opacity 0.3s ease, transform 0.3s ease;
-  }
-
-  /* Saat video diputar: progress bar turun ke paling bawah */
-  .player-container.mobile-playing .cust-progress-wrap {
-    bottom: -6px; /* menempel ke bawah */
-    transition: bottom 0.3s ease;
-  }
-
-  /* Saat video pause atau user tap: tampil kembali */
-  .player-container.mobile-playing.mobile-showing .cust-controls {
-    opacity: 1;
-    pointer-events: all;
-    transform: translateY(0);
-  }
-
-  .player-container.mobile-playing.mobile-showing .cust-progress-wrap {
-    bottom: 40px; /* kembali ke posisi normal */
   }
 }
 
@@ -1141,31 +1089,6 @@ footer {
   margin-left: 5px;
 }
 
-/* --- Responsif di HP --- */
-@media (max-width: 768px) {
-  .cust-controls .ctrl-btn svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .cust-controls .ctrl-btn {
-    padding: 4px;
-  }
-
-  .left-controls #btnPrev {
-    margin-left: -10px; /* jarak antara replay dan next */
-  }
-
-  .left-controls #btnNext {
-    margin-left: -15px; /* jarak antara replay dan next */
-  }
-
-  .time-display {
-    font-size: 12px;
-    margin-left: -10px;
-  }
-}
-
 /* --- FIX: perluas area klik progress bar ke atas & bawah --- */
 .cust-progress-wrap {
   bottom: 40px;
@@ -1184,4 +1107,245 @@ footer {
   background: transparent;
   z-index: -1;
   pointer-events: auto; /* aktif tangkap klik */
+}
+
+@media (max-width: 900px) {
+  .mobile-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none; /* ⛔ cegah semua tap */
+    transition: opacity 0.25s ease;
+    z-index: 50;
+  }
+
+  .mobile-overlay.show {
+    opacity: 1;
+    pointer-events: auto; /* ✅ aktifkan tap */
+  }
+
+  .overlay-gesture {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto !important; /* tetap bisa menerima tap */
+  }
+
+  /* tombol kontrol hanya aktif saat overlay terlihat */
+  .mobile-overlay:not(.show) .overlay-center,
+  .mobile-overlay:not(.show) .overlay-bottom,
+  .mobile-overlay:not(.show) .mobile-progress-wrapper {
+    pointer-events: none;
+  }
+
+  .overlay-center {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .overlay-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .overlay-btn svg {
+    width: 40px;
+    height: 40px;
+    fill: #fff;
+  }
+
+  .prev-btn {
+    width: 45px; /* ⬅️ ubah sesukamu */
+    height: 45px;
+  }
+
+  .prev-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .next-btn {
+    width: 45px; /* ⬅️ ubah sesukamu */
+    height: 45px;
+  }
+
+  .next-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .overlay-btn:active {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .overlay-bottom {
+    position: absolute;
+    bottom: 10px;
+    width: 95%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    font-size: 14px;
+    padding: 0 8px;
+  }
+
+  .overlay-time {
+    font-family: monospace;
+    color: #eaeaea;
+  }
+
+  .overlay-fs {
+    background: none;
+    border: none;
+    padding: 8px;
+  }
+
+  .overlay-fs svg {
+    width: 20px;
+    height: 20px;
+    fill: #fff;
+  }
+}
+
+/* === Mobile Progress Overlay === */
+.mobile-progress-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  z-index: 999; /* pastikan di atas overlay gesture */
+  pointer-events: auto;
+  touch-action: none; /* 🚀 Mencegah scroll */
+}
+
+.mobile-progress-bg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  pointer-events: auto;
+  touch-action: none; /* 🚀 Wajib untuk Android Chrome */
+}
+
+.mobile-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #ff2e76;
+  border-radius: 3px;
+  width: 0%;
+  pointer-events: none;
+}
+
+.mobile-progress-dot {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: #ff2e76;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.mobile-progress-time {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.mobile-progress-wrapper.dragging .mobile-progress-dot {
+  opacity: 1;
+}
+
+/* === Gesture Area (Mobile Double Tap) === */
+.gesture-area {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 250; /* di atas video, di bawah tombol overlay */
+  background: transparent;
+  pointer-events: auto;
+}
+.gesture-area.left {
+  left: 0;
+}
+.gesture-area.right {
+  right: 0;
+}
+
+/* === Seek hint ( +10s / -10s ) === */
+.seek-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.seek-hint.show {
+  opacity: 1;
+}
+
+.double-tap-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 999;
+}
+.double-tap-icon.left {
+  left: 5%;
+}
+.double-tap-icon.right {
+  right: 5%;
+}
+.double-tap-icon.show {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
 }
