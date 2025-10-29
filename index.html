@@ -57,14 +57,28 @@
               saweria.
             </li>
             <li>
-              Tunggu max. 24 jam (Kamu Verif Jika mendapat Email Info
-              Langganan).
+              Verifikasi pembayaran melalui tombol dibawah.
             </li>
             <li>
               Link nobar dikirim ke Email masing-masing (1 jam sebelum show
               dimulai).
             </li>
           </ol>
+        </div>
+
+        <!-- 🧾 Info tambahan langsung terlihat -->
+        <div id="membership-summary" class="text-center mt-3">
+          <p class="fw-bold mb-2 text-danger" id="total-membership-text">
+            Total Membership: <span id="total-membership-count"></span> Anggota
+          </p>
+
+          <a
+            href="https://wa.me/6289675752598?text=Halo,%20tolong%20verifikasi%20pembayaran%20saya."
+            target="_blank"
+            class="btn btn-replay w-100 text-white mb-2"
+          >
+            Verifikasi Pembayaran ke Admin
+          </a>
         </div>
 
         <!-- Tombol baru -->
@@ -85,17 +99,14 @@
 
         <!-- Jadwal 1 -->
         <div class="show-card">
-          <img
-            src="assets/pajamadrive.png"
-            alt="Show 1"
-            class="show-thumb"
-          />
+          <img src="assets/pajamadrive.png" alt="Show 1" class="show-thumb" />
           <div class="show-info">
             <h6 class="show-title">Pajama Drive</h6>
             <p>🗓️ Kamis, 31 Okt 2025</p>
             <p>🕒 19:00 WIB</p>
             <p>
-              👥 Auwia, Ekin, Erine, Intan, Kimmy, Levi, Lily, Nachia, Nala, Nayla, Oline, Trisha
+              👥 Auwia, Ekin, Erine, Intan, Kimmy, Levi, Lily, Nachia, Nala,
+              Nayla, Oline, Trisha
             </p>
           </div>
         </div>
@@ -112,28 +123,26 @@
             <p>🗓️ Jum'at, 30 Okt 2025</p>
             <p>🕒 19:00 WIB</p>
             <p>
-              👥 Amanda, Cathy, Cynthia, Fiony, Gracia, Gracie, Kathrina, Lia, Lyn, Michie, Oniel, Raisha
+              👥 Amanda, Cathy, Cynthia, Fiony, Gracia, Gracie, Kathrina, Lia,
+              Lyn, Michie, Oniel, Raisha
             </p>
           </div>
         </div>
-        
+
         <!-- Jadwal 3 -->
         <div class="show-card">
-          <img
-            src="assets/inginbertemu.png"
-            alt="Show 3"
-            class="show-thumb"
-          />
+          <img src="assets/inginbertemu.png" alt="Show 3" class="show-thumb" />
           <div class="show-info">
             <h6 class="show-title">Ingin Bertemu</h6>
             <p>🗓️ Sabtu, 01 Nov 2025</p>
             <p>🕒 14:00 WIB</p>
             <p>
-              👥 Aralie, Delynn, Erine, Giaa, Jemima, Kimmy, Levi, Nachia, Ribka, Rilly, Trisha, Virgi
+              👥 Aralie, Delynn, Erine, Giaa, Jemima, Kimmy, Levi, Nachia,
+              Ribka, Rilly, Trisha, Virgi
             </p>
           </div>
         </div>
-        
+
         <!-- Jadwal 4 -->
         <div class="show-card">
           <img
@@ -146,7 +155,8 @@
             <p>🗓️ Sabtu, 01 Nov 2025</p>
             <p>🕒 19:00 WIB</p>
             <p>
-              👥 Alya, Cathy, Danella, Eli, Elin, Fiony, Freya, Fritzy, Gendis, Indah, Jessi, Marsha
+              👥 Alya, Cathy, Danella, Eli, Elin, Fiony, Freya, Fritzy, Gendis,
+              Indah, Jessi, Marsha
             </p>
           </div>
         </div>
@@ -161,7 +171,7 @@
     <script>
       async function cekMembership() {
         const no = document.getElementById("whatsapp").value.trim();
-        const result = document.getElementById("result"); // perbaikan di sini
+        const result = document.getElementById("result");
 
         if (!no) {
           result.innerHTML = `<div class="alert alert-warning">Masukkan nomor WhatsApp terlebih dahulu.</div>`;
@@ -178,13 +188,21 @@
           const data = await res.json();
 
           if (data.status === "success") {
+            const expiredDate = new Date(data.expired);
+            const options = { day: "numeric", month: "long", year: "numeric" };
+            const formattedDate = expiredDate.toLocaleDateString(
+              "id-ID",
+              options
+            );
             const email3 = data.email.substring(0, 4) + "*****@*****.com";
+
             result.innerHTML = `
           <div class="card mt-3 shadow-sm">
             <div class="card-body text-center">
               <p><b>No. WhatsApp:</b> ${data.no}</p>
               <p><b>Email:</b> ${email3}</p>
               <p><b>Sisa hari berlangganan:</b> ${data.sisaHari} hari</p>
+              <p><b>Berakhir pada:</b> ${formattedDate}</p>
               <p><b>Bonus:</b> ${data.bonus}</p>
             </div>
           </div>`;
@@ -198,6 +216,30 @@
           result.innerHTML = `<div class="alert alert-danger">Gagal menghubungi server. Pastikan URL Apps Script kamu benar & publik.</div>`;
         }
       }
+
+      // 🧮 Fungsi ini langsung dijalankan saat halaman dibuka
+      async function loadTotalMembershipOnLoad() {
+        const totalEl = document.getElementById("total-membership-count");
+
+        try {
+          // Endpoint Apps Script kamu harus mendukung parameter ?action=total
+          const res = await fetch(
+            "https://script.google.com/macros/s/AKfycbxt9pXmUuDssy41Y0EaF8Js23gx9NaU7f5UjLwxY1mHmv8LOIfwMFoszk-HsRF6lehh7Q/exec?action=total"
+          );
+          const data = await res.json();
+
+          if (data.totalMembership !== undefined) {
+            totalEl.textContent = data.totalMembership;
+          } else {
+            totalEl.textContent = "-";
+          }
+        } catch (err) {
+          console.warn("Gagal memuat total membership:", err);
+          totalEl.textContent = "-";
+        }
+      }
+
+      window.addEventListener("load", loadTotalMembershipOnLoad);
     </script>
   </body>
 </html>
