@@ -200,3 +200,34 @@ document.addEventListener("webkitfullscreenchange", () => {
     unlockOrientation();
   }
 });
+
+/* =====================================================
+   === Keyboard Shortcuts: Shift + N / Shift + P ===
+===================================================== */
+document.addEventListener("keydown", (e) => {
+  // SHIFT + N → Next Video
+  if (e.shiftKey && e.key.toLowerCase() === "n") {
+    e.preventDefault();
+    playNextVideo();
+  }
+
+  // SHIFT + P → Previous Video
+  if (e.shiftKey && e.key.toLowerCase() === "p") {
+    e.preventDefault();
+    playPreviousVideo();
+  }
+});
+
+/* =====================================================
+   === Fungsi Previous Video (tambahan) ===
+===================================================== */
+function playPreviousVideo() {
+  const items = document.querySelectorAll(".playlist .item");
+  if (currentIndex > 0) {
+    currentIndex--;
+  } else {
+    currentIndex = items.length - 1; // kalau sudah di awal, kembali ke video terakhir
+  }
+  const prevId = items[currentIndex].dataset.video;
+  loadVideo(prevId, currentIndex);
+}
