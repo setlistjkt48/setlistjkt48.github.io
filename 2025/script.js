@@ -3,13 +3,17 @@ let currentIndex = 0;
 let expanded = window.innerWidth >= 900; // ✅ default: desktop terbuka
 
 function onYouTubeIframeAPIReady() {
+  // Ambil item pertama di playlist (no. 1)
+  const firstItem = document.querySelector(".playlist .item");
+  const firstVideoId = firstItem ? firstItem.dataset.video : "QhSfakzeDuI";
+
   player = new YT.Player("player", {
     height: "100%",
     width: "100%",
-    videoId: "QhSfakzeDuI", // default video pertama
+    videoId: firstVideoId, // 🔹 otomatis ambil video pertama dari playlist web
     playerVars: {
       autoplay: 0,
-      controls: 1, // ✅ aktifkan kontrol asli YouTube
+      controls: 1,
       rel: 0,
       modestbranding: 1,
       fs: 1,
