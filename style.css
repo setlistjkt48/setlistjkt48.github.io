@@ -138,6 +138,27 @@ button.btn-danger:hover {
   }
 }
 
+/* Tombol verifikasi pembayaran */
+.btn-verifikasi {
+  background: linear-gradient(90deg, #204ee6, #2046c4);
+  border: none;
+  border-radius: 10px;
+  margin-top: 20px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: 0.25s;
+}
+
+.btn-verifikasi:hover {
+  background: linear-gradient(90deg, #1d49d8, #1e42b9);
+  transform: scale(1.02);
+}
+
+.btn-verifikasi.disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
 /* Tombol replay show */
 .btn-replay {
   background: linear-gradient(90deg, #204ee6, #2046c4);
