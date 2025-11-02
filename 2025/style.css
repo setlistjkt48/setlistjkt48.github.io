@@ -189,7 +189,7 @@ iframe {
   background: #111;
   padding: 12px;
   border-radius: var(--radius);
-  max-height: 200vh;
+  max-height: 250vh;
   overflow: auto;
 }
 .item {
