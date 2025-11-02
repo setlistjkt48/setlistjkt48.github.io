@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SetlistJKT48</title>
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="icon" type="image/png" href="../../Logo SetlistJKT48.png" />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div class="logo">
+          <img src="../../Logo SetlistJKT48.png" alt="SetlistJKT48 Logo" />
+          <span class="brand-name">SetlistJKT48</span>
+        </div>
+        <div class="buttons">
+          <button
+            class="icon-btn"
+            onclick="location.href='https://setlistjkt48.github.io/'"
+          >
+            🏠 Home
+          </button>
+          <div class="dropdown">
+            <button class="icon-btn" id="showBtn">
+              📅 Show Theater JKT48 ▾
+            </button>
+            <div class="dropdown-menu" id="dropdownMenu">
+              <a href="../januari/">Januari 2025</a>
+              <a href="../februari/">Februari 2025</a>
+              <a href="../maret/">Maret 2025</a>
+              <a href="../april/">April 2025</a>
+              <a href="../mei/">Mei 2025</a>
+              <a href="../juni/">Juni 2025</a>
+              <a href="../juli/">Juli 2025</a>
+              <a href="../agustus/">Agustus 2025</a>
+              <a href="../september/">September 2025</a>
+              <a href="../oktober/">Oktober 2025</a>
+              <a href="../november/">November 2025</a>
+            </div>
+          </div>
+        </div>
+        <div class="search">
+          <input type="search" id="searchInput" placeholder="Cari video..." />
+          <button id="searchBtn">🔍</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="grid">
+        <section>
+          <div class="player-wrap">
+            <div class="player-container">
+              <div id="player"></div>
+            </div>
+
+            <!-- Line-up member -->
+            <div class="member-box" id="memberBox">
+              <div class="member-title">Line up Member</div>
+              <div class="member-grid" id="memberGrid"></div>
+              <div class="show-more">
+                <button id="toggleBtn">Tampilkan Line up</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Playlist -->
+        <aside class="playlist" id="playlist">
+          <div class="item" data-video="l_Cl266stx4" onclick="loadVideo('l_Cl266stx4',0)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/l_Cl266stx4/hqdefault.jpg" />
+            </div>
+            <div class="it-title">ATURAN ANTI CINTA - 04/06/2025</div>
+          </div>
+          <div class="item" data-video="zBkOq1b7bSc" onclick="loadVideo('zBkOq1b7bSc',1)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/zBkOq1b7bSc/hqdefault.jpg" />
+            </div>
+            <div class="it-title">CARA MEMINUM RAMUNE - 07/06/2025</div>
+          </div>
+          <div class="item" data-video="ne7jHMtughM" onclick="loadVideo('ne7jHMtughM',2)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/ne7jHMtughM/hqdefault.jpg" />
+            </div>
+            <div class="it-title">INGIN BERTEMU - 07/06/2025</div>
+          </div>
+          <div class="item" data-video="megD9hk3feU" onclick="loadVideo('megD9hk3feU',3)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/megD9hk3feU/hqdefault.jpg" />
+            </div>
+            <div class="it-title">PAJAMA DRIVE - 08/06/2025</div>
+          </div>
+          <div class="item" data-video="YLRqNnZ2CUo" onclick="loadVideo('YLRqNnZ2CUo',4)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/YLRqNnZ2CUo/hqdefault.jpg" />
+            </div>
+            <div class="it-title">INGIN BERTEMU - 12/06/2025</div>
+          </div>
+          <div class="item" data-video="dG3pZe7hg_Y" onclick="loadVideo('dG3pZe7hg_Y',5)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/dG3pZe7hg_Y/hqdefault.jpg" />
+            </div>
+            <div class="it-title">SAMBIL MENGGANDENG ERAT TANGANKU - 13/06/2025</div>
+          </div>
+          <div class="item" data-video="SOZfkEI8heg" onclick="loadVideo('SOZfkEI8heg',6)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/SOZfkEI8heg/hqdefault.jpg" />
+            </div>
+            <div class="it-title">ATURAN ANTI CINTA - 14/06/2025</div>
+          </div>
+          <div class="item" data-video="4HN-tGlzyrg" onclick="loadVideo('4HN-tGlzyrg',7)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/4HN-tGlzyrg/hqdefault.jpg" />
+            </div>
+            <div class="it-title">PAJAMA DRIVE - 14/06/2025</div>
+          </div>
+          <div class="item" data-video="nrylMxD8ZE4" onclick="loadVideo('nrylMxD8ZE4',8)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/nrylMxD8ZE4/hqdefault.jpg" />
+            </div>
+            <div class="it-title">INGIN BERTEMU - 20/06/2025</div>
+          </div>
+          <div class="item" data-video="crbXLnttjmA" onclick="loadVideo('crbXLnttjmA',9)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/crbXLnttjmA/hqdefault.jpg" />
+            </div>
+            <div class="it-title">SAMBIL MENGGANDENG ERAT TANGANKU - 19/06/2025</div>
+          </div>
+          <div class="item" data-video="4a2qrQEhp0E" onclick="loadVideo('4a2qrQEhp0E',10)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/4a2qrQEhp0E/hqdefault.jpg" />
+            </div>
+            <div class="it-title">PAJAMA DRIVE - 21/06/2025</div>
+          </div>
+          <div class="item" data-video="9Bk_-30fNX0" onclick="loadVideo('9Bk_-30fNX0',11)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/9Bk_-30fNX0/hqdefault.jpg" />
+            </div>
+            <div class="it-title">ATURAN ANTI CINTA (STS ELI) - 22/06/2025</div>
+          </div>
+          <div class="item" data-video="9C_HXxVEIIA" onclick="loadVideo('9C_HXxVEIIA',12)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/9C_HXxVEIIA/hqdefault.jpg" />
+            </div>
+            <div class="it-title">SAMBIL MENGGANDENG ERAT TANGANKU (STS GENDIS) - 26/06/2025</div>
+          </div>
+          <div class="item" data-video="3Z4DBylONWQ" onclick="loadVideo('3Z4DBylONWQ',13)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/3Z4DBylONWQ/hqdefault.jpg" />
+            </div>
+            <div class="it-title">ATURAN ANTI CINTA - 27/06/2025</div>
+          </div>
+          <div class="item" data-video="kNupa9NMtg0" onclick="loadVideo('kNupa9NMtg0',14)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/kNupa9NMtg0/hqdefault.jpg" />
+            </div>
+            <div class="it-title">PAJAMA DRIVE - 28/06/2025</div>
+          </div>
+          <div class="item" data-video="iuMiIf3Esy0" onclick="loadVideo('iuMiIf3Esy0',15)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/iuMiIf3Esy0/hqdefault.jpg" />
+            </div>
+            <div class="it-title">CARA MEMINUM RAMUNE - 29/06/2025</div>
+          </div>
+        </aside>
+      </div>
+      <footer>Copyright © 2025 SetlistJKT48</footer>
+    </main>
+
+    <!-- YouTube API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+      // === Konfigurasi URL Apps Script Web App ===
+      const APP_SCRIPT_URL =
+        "https://script.google.com/macros/s/AKfycbyaC-dRyS85-2iSBSQT_WR33TysVkmm6lmkhfRD3S8s1aDQwVOo6NTL3vT6s19rZMJ6nA/exec";
+
+      // === Lama cache email (dalam milidetik) ===
+      const CACHE_DURATION = 3 * 24 * 60 * 60 * 1000; // 3 hari
+
+      // Simpan email + timestamp ke localStorage
+      function saveEmailCache(email) {
+        const data = {
+          email: email,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem("verifiedEmail", JSON.stringify(data));
+      }
+
+      // Ambil email dari cache (jika masih berlaku)
+      function loadEmailCache() {
+        const raw = localStorage.getItem("verifiedEmail");
+        if (!raw) return null;
+
+        try {
+          const data = JSON.parse(raw);
+          const now = Date.now();
+
+          if (now - data.timestamp > CACHE_DURATION) {
+            // sudah lebih dari 3 hari
+            localStorage.removeItem("verifiedEmail");
+            return null;
+          }
+
+          return data.email;
+        } catch {
+          localStorage.removeItem("verifiedEmail");
+          return null;
+        }
+      }
+
+      // === Fungsi verifikasi email ===
+      async function verifyEmail() {
+        // Cek cache email sebelumnya
+        let cachedEmail = loadEmailCache();
+        if (cachedEmail) {
+          console.log("Email dari cache:", cachedEmail);
+          return true; // sudah pernah login
+        }
+
+        // Tampilkan prompt input email
+        const email = prompt(
+          "Halaman untuk Membership. Masukkan email kamu untuk melanjutkan:"
+        );
+        if (!email) {
+          alert("Email wajib diisi.");
+          window.location.reload();
+          return false;
+        }
+
+        try {
+          // Kirim ke Apps Script untuk verifikasi
+          const response = await fetch(
+            `${APP_SCRIPT_URL}?email=${encodeURIComponent(email)}`
+          );
+          const data = await response.json();
+
+          if (data.valid === true) {
+            saveEmailCache(email);
+            alert("Login berhasil!");
+            return true;
+          } else {
+            alert("Email tidak terdaftar. Akses ditolak.");
+            window.location.href = "https://setlistjkt48.github.io/";
+            return false;
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Terjadi kesalahan koneksi ke server.");
+          return false;
+        }
+      }
+
+      // Jalankan verifikasi sebelum halaman tampil
+      document.addEventListener("DOMContentLoaded", async () => {
+        const ok = await verifyEmail();
+        if (!ok) {
+          document.body.innerHTML =
+            "<h2 style='color:white;text-align:center;margin-top:40vh;'>Akses ditolak</h2>";
+        }
+      });
+    </script>
+    <script src="../script.js"></script>
+    <script>
+      // === Lineup Data ===
+      const videoLineup = [
+        [
+          "Alya", "Amanda", "Anindya", "Lia", "Cathy", "Oniel", "Danella", "Daisy", "Gendis", "Gracie", "Greesel", "Eli", "Indira", "Lyn", "Lulu", "Raisha"
+        ],
+        [
+          "Lana", "Oniel", "Cynthia", "Danella", "Olla", "Ella", "Gita", "Gracie", "Eli", "Indah", "Jessi", "Lyn", "Kathrina", "Lulu", "Muthe", "Nala"
+        ],
+        [
+          "Aralie", "Delynn", "Virgi", "Erine", "Giaa", "Lily", "Trisha", "Levi", "Nayla", "Nachia", "Ribka", "Kimmy"
+        ],
+        [
+          "Aralie", "Auwia", "Rilly", "Lily", "Maira", "Ekin", "Trisha", "Levi", "Nayla", "Intan", "Oline", "Nala"
+        ],
+        [
+          "Aralie", "Delynn", "Virgi", "Rilly", "Erine", "Giaa", "Trisha", "Levi", "Mikaela", "Nayla", "Ribka", "Kimmy"
+        ],
+        [
+          "Christy", "Anindya", "Elin", "Cynthia", "Fiony", "Freya", "Fritzy", "Greesel", "Indira", "Lyn", "Kathrina", "Lulu"
+        ],
+        [
+          "Alya", "Amanda", "Anindya", "Cathy", "Daisy", "Olla", "Freya", "Ella", "Gracie", "Greesel", "Indah", "Indira", "Lyn", "Kathrina", "Raisha", "Levi"
+        ],
+        [
+          "Aralie", "Virgi", "Auwia", "Rilly", "Erine", "Maira", "Ekin", "Trisha", "Jemima", "Intan", "Oline", "Nala"
+        ],
+        [
+          "Anindya", "Oniel", "Danella", "Daisy", "Gendis", "Gita", "Indah", "Indira", "Kathrina", "Lulu", "Marsha", "Michie"
+        ],
+        [
+          "Virgi", "Auwia", "Rilly", "Giaa", "Ekin", "Trisha", "Jemima", "Levi", "Mikaela", "Nachia", "Intan", "Oline"
+        ],
+        [
+          "Aralie", "Delynn", "Virgi", "Auwia", "Erine", "Maira", "Ekin", "Trisha", "Nachia", "Intan", "Oline", "Nala"
+        ],
+        [
+          "Alya", "Anindya", "Olla", "Fiony", "Ella", "Gendis", "Gita", "Gracie", "Greesel", "Eli", "Indah", "Indira", "Jessi", "Raisha", "Lily", "Levi"
+        ],
+        [
+          "Anindya", "Cathy", "Elin", "Oniel", "Danella", "Fiony", "Gendis", "Gracie", "Kathrina", "Marsha", "Michie", "Raisha"
+        ],
+        [
+          "Alya", "Amanda", "Lana", "Cathy", "Daisy", "Feni", "Fritzy", "Ella", "Gendis", "Gracie", "Greesel", "Eli", "Indira", "Lyn", "Raisha", "Gracia"
+        ],
+        [
+          "Aralie", "Auwia", "Lily", "Ekin", "Trisha", "Levi", "Nayla", "Intan", "Oline", "Ribka", "Nala", "Kimmy"
+        ],
+        [
+          "Christy", "Lia", "Cynthia", "Danella", "Daisy", "Olla", "Freya", "Gita", "Greesel", "Indah", "Indira", "Jessi", "Kathrina", "Lulu", "Marsha", "Michie"
+        ],
+      ];
+    </script>
+  </body>
+</html>
