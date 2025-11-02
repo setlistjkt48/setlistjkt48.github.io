@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SetlistJKT48</title>
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="icon" type="image/png" href="../../Logo SetlistJKT48.png" />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div class="logo">
+          <img src="../../Logo SetlistJKT48.png" alt="SetlistJKT48 Logo" />
+          <span class="brand-name">SetlistJKT48</span>
+        </div>
+        <div class="buttons">
+          <button
+            class="icon-btn"
+            onclick="location.href='https://setlistjkt48.github.io/'"
+          >
+            🏠 Home
+          </button>
+          <div class="dropdown">
+            <button class="icon-btn" id="showBtn">
+              📅 Show Theater JKT48 ▾
+            </button>
+            <div class="dropdown-menu" id="dropdownMenu">
+              <a href="../januari/">Januari 2025</a>
+              <a href="../februari/">Februari 2025</a>
+              <a href="../maret/">Maret 2025</a>
+              <a href="../april/">April 2025</a>
+              <a href="../mei/">Mei 2025</a>
+              <a href="../juni/">Juni 2025</a>
+              <a href="../juli/">Juli 2025</a>
+              <a href="../agustus/">Agustus 2025</a>
+              <a href="../september/">September 2025</a>
+              <a href="../oktober/">Oktober 2025</a>
+              <a href="../november/">November 2025</a>
+            </div>
+          </div>
+        </div>
+        <div class="search">
+          <input type="search" id="searchInput" placeholder="Cari video..." />
+          <button id="searchBtn">🔍</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="grid">
+        <section>
+          <div class="player-wrap">
+            <div class="player-container">
+              <div id="player"></div>
+            </div>
+
+            <!-- Line-up member -->
+            <div class="member-box" id="memberBox">
+              <div class="member-title">Line up Member</div>
+              <div class="member-grid" id="memberGrid"></div>
+              <div class="show-more">
+                <button id="toggleBtn">Tampilkan Line up</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Playlist -->
+        <aside class="playlist" id="playlist">
+          <div class="item" data-video="TI4pkXASCYc" onclick="loadVideo('TI4pkXASCYc',0)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/TI4pkXASCYc/hqdefault.jpg" />
+            </div>
+            <div class="it-title">PAJAMA DRIVE - 02/07/2025</div>
+          </div>
+          <div class="item" data-video="DJbqz4idw5I" onclick="loadVideo('DJbqz4idw5I',1)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/DJbqz4idw5I/hqdefault.jpg" />
+            </div>
+            <div class="it-title">CARA MEMINUM RAMUNE (STS GITA) - 03/07/2025</div>
+          </div>
+          <div class="item" data-video="hRTdPK0u_gY" onclick="loadVideo('hRTdPK0u_gY',2)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/hRTdPK0u_gY/hqdefault.jpg" />
+            </div>
+            <div class="it-title">PAJAMA DRIVE - 16/07/2025</div>
+          </div>
+          <div class="item" data-video="UbM_6fS8BnA" onclick="loadVideo('UbM_6fS8BnA',3)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/UbM_6fS8BnA/hqdefault.jpg" />
+            </div>
+            <div class="it-title">CARA MEMINUM RAMUNE (STS MUTHE) - 17/07/2025</div>
+          </div>
+          <div class="item" data-video="mrU-eC26U4k" onclick="loadVideo('mrU-eC26U4k',4)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/mrU-eC26U4k/hqdefault.jpg" />
+            </div>
+            <div class="it-title">JKT48 SPECIAL CONCERT: FULL HOUSE</div>
+          </div>
+          <div class="item" data-video="lS-ZTSXpNxA" onclick="loadVideo('lS-ZTSXpNxA',5)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/lS-ZTSXpNxA/hqdefault.jpg" />
+            </div>
+            <div class="it-title">ATURAN ANTI CINTA - 30/07/2025</div>
+          </div>
+          <div class="item" data-video="mLwRfUsm9d4" onclick="loadVideo('mLwRfUsm9d4',6)">
+            <div class="thumb"><img src="https://img.youtube.com/vi/mLwRfUsm9d4/hqdefault.jpg" />
+            </div>
+            <div class="it-title">ATURAN ANTI CINTA (STS ONIEL) - 31/07/2025</div>
+          </div>
+        </aside>
+      </div>
+      <footer>Copyright © 2025 SetlistJKT48</footer>
+    </main>
+
+    <!-- YouTube API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+      // === Konfigurasi URL Apps Script Web App ===
+      const APP_SCRIPT_URL =
+        "https://script.google.com/macros/s/AKfycbyaC-dRyS85-2iSBSQT_WR33TysVkmm6lmkhfRD3S8s1aDQwVOo6NTL3vT6s19rZMJ6nA/exec";
+
+      // === Lama cache email (dalam milidetik) ===
+      const CACHE_DURATION = 3 * 24 * 60 * 60 * 1000; // 3 hari
+
+      // Simpan email + timestamp ke localStorage
+      function saveEmailCache(email) {
+        const data = {
+          email: email,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem("verifiedEmail", JSON.stringify(data));
+      }
+
+      // Ambil email dari cache (jika masih berlaku)
+      function loadEmailCache() {
+        const raw = localStorage.getItem("verifiedEmail");
+        if (!raw) return null;
+
+        try {
+          const data = JSON.parse(raw);
+          const now = Date.now();
+
+          if (now - data.timestamp > CACHE_DURATION) {
+            // sudah lebih dari 3 hari
+            localStorage.removeItem("verifiedEmail");
+            return null;
+          }
+
+          return data.email;
+        } catch {
+          localStorage.removeItem("verifiedEmail");
+          return null;
+        }
+      }
+
+      // === Fungsi verifikasi email ===
+      async function verifyEmail() {
+        // Cek cache email sebelumnya
+        let cachedEmail = loadEmailCache();
+        if (cachedEmail) {
+          console.log("Email dari cache:", cachedEmail);
+          return true; // sudah pernah login
+        }
+
+        // Tampilkan prompt input email
+        const email = prompt(
+          "Halaman untuk Membership. Masukkan email kamu untuk melanjutkan:"
+        );
+        if (!email) {
+          alert("Email wajib diisi.");
+          window.location.reload();
+          return false;
+        }
+
+        try {
+          // Kirim ke Apps Script untuk verifikasi
+          const response = await fetch(
+            `${APP_SCRIPT_URL}?email=${encodeURIComponent(email)}`
+          );
+          const data = await response.json();
+
+          if (data.valid === true) {
+            saveEmailCache(email);
+            alert("Login berhasil!");
+            return true;
+          } else {
+            alert("Email tidak terdaftar. Akses ditolak.");
+            window.location.href = "https://setlistjkt48.github.io/";
+            return false;
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Terjadi kesalahan koneksi ke server.");
+          return false;
+        }
+      }
+
+      // Jalankan verifikasi sebelum halaman tampil
+      document.addEventListener("DOMContentLoaded", async () => {
+        const ok = await verifyEmail();
+        if (!ok) {
+          document.body.innerHTML =
+            "<h2 style='color:white;text-align:center;margin-top:40vh;'>Akses ditolak</h2>";
+        }
+      });
+    </script>
+    <script src="../script.js"></script>
+    <script>
+      // === Lineup Data ===
+      const videoLineup = [
+        [
+          "Delynn", "Auwia", "Erine", "Giaa", "Lily", "Ekin", "Trisha", "Mikaela", "Nachia", "Intan", "Oline", "Kimmy"
+        ],
+        [
+          "Lia", "Lana", "Elin", "Chelsea", "Oniel", "Danella", "Olla", "Fiony", "Gita", "Gracie", "Greesel", "Eli", "Indah", "Indira", "Jessi", "Kathrina"
+        ],
+        [
+          "Aralie", "Auwia", "Lily", "Ekin", "Trisha", "Jemima", "Nayla", "Intan", "Oline", "Ribka", "Nala", "Kimmy"
+        ],
+        [
+          "Lia", "Cathy", "Cynthia", "Danella", "Fiony", "Gita", "Greesel", "Eli", "Indira", "Jessi", "Lyn", "Kathrina", "Lulu", "Marsha", "Muthe", "Trisha"
+        ],
+        [
+          "Alya", "Amanda", "Christy", "Anindya", "Lia", "Lana", "Cathy", "Elin", "Chelsea", "Oniel", "Cynthia", "Danella", "Daisy", "Olla", "Feni", 
+          "Fiony", "Freya", "Fritzy", "Ella", "Gendis", "Gita", "Gracie", "Greesel", "Eli", "Indah", "Indira", "Jessi", "Lyn", "Kathrina", "Lulu",
+          "Marsha", "Michie", "Muthe", "Raisha", "Gracia", "Aralie", "Delynn", "Virgi", "Auwia", "Rilly", "Erine", "Giaa", "Lily", "Maira", "Ekin",
+          "Trisha", "Jemima", "Levi", "Mikaela", "Nayla", "Nachia", "Intan", "Oline", "Ribka", "Nala", "Kimmy"
+        ],
+        [
+          "Anindya", "Lia", "Cynthia", "Danella", "Feni", "Fiony", "Freya", "Ella", "Gendis", "Gita", "Gracie", "Greesel", "Jessi", "Raisha", "Gracia", "Levi"
+        ],
+        [
+          "Alya", "Lana", "Cathy", "Oniel", "Daisy", "Olla", "Gendis", "Gita", "Gracie", "Greesel", "Eli", "Lyn", "Lulu", "Raisha", "Erine", "Levi"
+        ],
+      ];
+    </script>
+  </body>
+</html>
