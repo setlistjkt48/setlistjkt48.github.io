@@ -442,27 +442,6 @@ footer {
   }
 }
 
-/* === Bersihkan semua overlay YouTube bawaan === */
-#player iframe {
-  pointer-events: auto !important; /* mencegah klik langsung */
-}
-
-/* hilangkan rule yang menyembunyikan ytp-* */
-.ytp-chrome-top,
-.ytp-chrome-bottom,
-.ytp-tooltip,
-.ytp-title,
-.ytp-gradient-top {
-  display: initial !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-/* Hilangkan watermark YouTube */
-.ytp-watermark {
-  display: none !important;
-}
-
 /* Pastikan video full area */
 #player,
 #player iframe {
@@ -470,3 +449,4 @@ footer {
   height: 100% !important;
   background: #000 !important;
 }
+
